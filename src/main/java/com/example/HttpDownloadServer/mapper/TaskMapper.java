@@ -1,4 +1,9 @@
 package com.example.HttpDownloadServer.mapper;
 
-public interface TaskMapper {
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.HttpDownloadServer.entity.Task;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface TaskMapper extends BaseMapper<Task> {
 }

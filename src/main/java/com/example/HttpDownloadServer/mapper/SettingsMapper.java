@@ -1,4 +1,10 @@
 package com.example.HttpDownloadServer.mapper;
 
-public interface SettingsMapper {
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.HttpDownloadServer.entity.Settings;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface SettingsMapper extends BaseMapper<Settings> {
+
 }

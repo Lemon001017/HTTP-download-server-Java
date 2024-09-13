@@ -73,7 +73,7 @@ ids: json   Desc: List of task ids
 ids: json   Desc: Task ids, required by the SSE interface
 ```
 
-## 3.Resume tasks
+## 4.Resume tasks
 
 ### Method
 
@@ -97,7 +97,7 @@ ids: json   Desc: List of task ids
 ids: json   Desc: Task ids, required by the SSE interface
 ```
 
-## 4.Restart tasks
+## 5.Restart tasks
 
 ### Method
 
@@ -121,7 +121,7 @@ ids: json   Desc: List of task ids
 ids: json   Desc: Task ids, required by the SSE interface
 ```
 
-## 5.Delete tasks
+## 6.Delete tasks
 
 ### Method
 
