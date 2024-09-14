@@ -56,7 +56,7 @@ const selectedOptions = ref([])
         <div style="display: flex;">
             <SideBar />
             <div style="flex-grow: 1;margin-top: 40px;">
-                <el-col class="full-width">
+                <el-col class="flex justify-center align-center w-[80vw]">
                     <el-row justify="space-between">
                         <el-col :span="16">
                             <el-input v-model="urlInput" size="large" style="width: 100%;margin-left: 40px;"
@@ -72,7 +72,7 @@ const selectedOptions = ref([])
                         <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-col>
-                <div>
+                <div class="w-[75vw] ml-[25px]">
                     <div v-for="(item, index) in data" :key="index" class="border-2 m-4">
                         <div class="m-4 w-[70vw]" style="display: flex;">
                             <input type="checkbox" :id="`option-${index}`" :value="item.value"
@@ -82,9 +82,9 @@ const selectedOptions = ref([])
                                     <label class="w-[20vw] flex-none" :for="`option-${index}`">{{ item.label }}</label>
                                     <el-input-number v-model="taskNum" :min="1" :max="10" @change="handleChange" />
                                     <div class="flex">
-                                        <img src="../assets/shuaxin.svg" class="icon">
-                                        <img src="../assets/kaishi.svg" class="icon">
-                                        <img src="../assets/shanchu.svg" class="icon">
+                                        <img src="../assets/shuaxin.svg" class="h-[16px] m-[5px]">
+                                        <img src="../assets/kaishi.svg" class="h-[16px] m-[5px]">
+                                        <img src="../assets/shanchu.svg" class="h-[16px] m-[5px]">
                                     </div>
                                 </div>
                                 <div class="mt-2">
@@ -107,13 +107,6 @@ const selectedOptions = ref([])
     </div>
 </template>
 <style scoped>
-.full-width {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100vw;
-}
-
 .el-row {
     width: 100%;
     margin-bottom: 20px;
@@ -132,9 +125,4 @@ const selectedOptions = ref([])
     margin-right: 40px;
 }
 
-
-.icon {
-    height: 16px;
-    margin: 5px;
-}
 </style>
