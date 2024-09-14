@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  margin: 0px;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* background-color: var(--body-bg); */
+  font-weight: normal;
+}
+
+h3{
+  margin: 0;
+}
