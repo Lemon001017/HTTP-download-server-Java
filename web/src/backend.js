@@ -26,7 +26,9 @@ export async function sendReq(method, url, data, token) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const resp = await fetch(url, {
+  const BASE_URL = 'http://localhost:8080';
+  const fullUrl = `${BASE_URL}${url}`;
+  const resp = await fetch(fullUrl, {
     method,
     credentials: 'same-origin',
     body: JSON.stringify(data),
