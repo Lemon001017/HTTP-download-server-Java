@@ -8,16 +8,8 @@ const taskNum = ref(1)
 const speedNum = ref(1)
 const downloadPath = ref('')
 
-async function saveSetting() {
-    await backend.post('/api/settings',{
-        Sample:{
-            id:1,
-            downloadPath:"/test1",
-            maxTasks:-1,
-            maxDownloadSpeed:1.3
-        }
-    })
-
+async function saveSetting(settings) {
+    await backend.post('/api/settings',JSON.parse(settings))
 }
 
 
