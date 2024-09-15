@@ -44,6 +44,7 @@ public class SettingsServiceImpl implements SettingsService {
         }
         result.setData(settings);
         result.setCode(Constants.HTTP_STATUS_OK);
+        log.info("Update settings success");
         return result;
     }
 

@@ -162,13 +162,30 @@ ids: json   Desc: Task ids
 ### Request
 
 ```
-null
+Settings : json   Desc: Settings is an object with a request body in JSON format, where id = 1.
+Sample:
+{
+    "id": 1,
+    "downloadPath":"/test1",
+    "maxTasks":-1,
+    "maxDownloadSpeed":1.3
+}
 ```
 
 ### Response
 
 ```
-isSuccess: json   Desc: Whether the operation was successful
+Result: json   Desc: Result is an object with a request body in JSON format
+Sample:
+{
+    "code": "200",
+    "data": {
+        "id": 1,
+        "downloadPath": "/test1",
+        "maxTasks": 4,
+        "maxDownloadSpeed": 1.3
+    }
+}
 ```
 
 ## 2.Get settings
@@ -192,5 +209,15 @@ null
 ### Response
 
 ```
-isSuccess: json   Desc: Whether the operation was successful
+Result: json   Desc: Result is an object with a request body in JSON format
+Sample:
+{
+    "code": "200",
+    "data": {
+        "id": 1,
+        "downloadPath": "/test1",
+        "maxTasks": 4,
+        "maxDownloadSpeed": 1.3
+    }
+}
 ```
