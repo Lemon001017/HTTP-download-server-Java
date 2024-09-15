@@ -1,26 +1,27 @@
 package com.example.HttpDownloadServer.param;
 
 import org.springframework.http.HttpStatus;
+
 /**
- * HTTP的状态码参数类
-**/
+ * HTTP status code parameter class
+ **/
 public class HTTPStatusParam {
     /**
-     * 状态码
+     * Status code
      **/
-    public int statusCode;
+    public int code;
     /**
-     * HTTPStatus
+     * HTTP Status
      */
     public HttpStatus httpStatus;
     /**
-     * 状态信息
+     * Status message
      **/
-    public String statusMessage;
-    HTTPStatusParam(){}
-    public HTTPStatusParam(int statusCode, HttpStatus httpStatus, String statusMessage){
-        this.statusCode = statusCode;
+    public String message;
+
+    public HTTPStatusParam(int code, HttpStatus httpStatus, String message) {
+        this.code = code;
         this.httpStatus = httpStatus;
-        this.statusMessage = statusMessage;
+        this.message = message;
     }
 }

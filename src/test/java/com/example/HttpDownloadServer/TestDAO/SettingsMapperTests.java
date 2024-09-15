@@ -5,7 +5,6 @@ import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -29,6 +28,4 @@ public class SettingsMapperTests {
         assertEquals(2, result.getMaxTasks());
         assertEquals(3, result.getMaxDownloadSpeed());
     }
-
-
 }
