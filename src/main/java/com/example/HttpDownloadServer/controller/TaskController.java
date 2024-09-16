@@ -6,6 +6,8 @@ import com.example.HttpDownloadServer.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 @RestController
@@ -21,7 +23,7 @@ public class TaskController {
      * @return
      */
     @PostMapping("/submit")
-    public Result<String> submit(@RequestParam String url) {
+    public Result<String> submit(@RequestParam String url) throws IOException, URISyntaxException {
         return taskService.submit(url);
     }
 

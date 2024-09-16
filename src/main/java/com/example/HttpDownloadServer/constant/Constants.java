@@ -3,18 +3,30 @@ package com.example.HttpDownloadServer.constant;
 import com.example.HttpDownloadServer.param.HTTPStatusParam;
 import org.springframework.http.HttpStatus;
 
-import javax.swing.plaf.PanelUI;
+import java.util.HashMap;
+import java.util.Map;
 
 public final class Constants {
     // Default Settings
     public static final String DEFAULT_DOWNLOAD_PATH = "D:\\";
     public static final Double DEFAULT_MAX_DOWNLOAD_SPEED = 1000D;
     public static final Integer DEFAULT_MAX_TASKS = 4;
+    public static final Integer DEFAULT_THREADS = 4;
 
     // Chunk Size
     public static final int MIN_CHUNK_SIZE = 32 * 1024;
     public static final int MID_CHUNK_SIZE = 1024 * 1024;
     public static final int MAX_CHUNK_SIZE = 10 * 1024 * 1024;
+
+    // File ext
+    private static final Map<String, String> MIME_TYPE_TO_EXTENSION = new HashMap<>();
+    static {
+        MIME_TYPE_TO_EXTENSION.put("image/jpeg", ".jpg");
+        MIME_TYPE_TO_EXTENSION.put("image/png", ".png");
+        MIME_TYPE_TO_EXTENSION.put("application/pdf", ".pdf");
+        MIME_TYPE_TO_EXTENSION.put("text/plain", ".txt");
+        MIME_TYPE_TO_EXTENSION.put("application/zip", ".zip");
+    }
 
     // Task Status
     public static final String TASK_STATUS_DOWNLOADING = "downloading";
