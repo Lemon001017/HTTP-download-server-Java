@@ -26,7 +26,7 @@ public class SettingsServiceImpl implements SettingsService {
             return result;
         }
         if (settings.getDownloadPath() == null) {
-            settings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_PATH);
+            settings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_ROOT_PATH);
         }
         if (settings.getMaxDownloadSpeed() <= 0) {
             settings.setMaxDownloadSpeed(Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
