@@ -18,16 +18,6 @@ public final class Constants {
     public static final int MID_CHUNK_SIZE = 1024 * 1024;
     public static final int MAX_CHUNK_SIZE = 10 * 1024 * 1024;
 
-    // File ext
-    private static final Map<String, String> MIME_TYPE_TO_EXTENSION = new HashMap<>();
-    static {
-        MIME_TYPE_TO_EXTENSION.put("image/jpeg", ".jpg");
-        MIME_TYPE_TO_EXTENSION.put("image/png", ".png");
-        MIME_TYPE_TO_EXTENSION.put("application/pdf", ".pdf");
-        MIME_TYPE_TO_EXTENSION.put("text/plain", ".txt");
-        MIME_TYPE_TO_EXTENSION.put("application/zip", ".zip");
-    }
-
     // Task Status
     public static final String TASK_STATUS_DOWNLOADING = "downloading";
     public static final String TASK_STATUS_DOWNLOADED = "downloaded";
@@ -49,4 +39,7 @@ public final class Constants {
     // Settings Error
     public static final String ERR_SAVE_SETTINGS = "Failed to save settings";
     public static final String ERR_GET_SETTINGS = "Failed to get settings";
+
+    // Task Errror
+    public static final String ERR_SUBMIT_TASK = "Failed to submit task";
 }

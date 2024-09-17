@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,16 +34,82 @@ public class TaskServiceImpl implements TaskService {
 
     private static final Logger log = LoggerFactory.getLogger(TaskServiceImpl.class);
 
-    private final ConcurrentHashMap<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
+    private static final Object lock = new Object();
+
+    private final ConcurrentHashMap<String, List<Future<?>>> runningTasks = new ConcurrentHashMap<>();
 
     private final ThreadPoolExecutor downloadExecutor = new ThreadPoolExecutor(4, 8,
-            60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+            60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(100));
 
     @Override
-    public Result<String> submit(String url) throws IOException, URISyntaxException {
+    public Result<String> submit(String url) {
+        Result<String> result = new Result<>();
         String taskId = UUIDUtils.generateId();
+        result.setCode(Constants.HTTP_STATUS_OK);
+        result.setData(taskId);
+
+        // Asynchronous processing download
+        CompletableFuture.runAsync(() -> {
+            try {
+                processDownload(taskId, url);
+            } catch (IOException | URISyntaxException e) {
+                log.error("Submit task error id:{} err:{}", taskId, e.getMessage(), e);
+                result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                result.setMessage(e.getMessage());
+            }
+        });
+        return result;
+    }
+
+    private void processDownload(String taskId, String url) throws IOException, URISyntaxException {
         Task task = initOneTask(taskId, url);
-        return null;
+        task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
+        File outputFile = new File(task.getSavePath());
+
+        // Submit the fragment for download
+        for (int i = 0; i < task.getChunkNum(); i++) {
+            int start = i * task.getChunkSize();
+            int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
+            downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile));
+        }
+    }
+
+    private void downloadChunk(Task task, int start, int end, File file) {
+        try {
+            HttpURLConnection conn = getConn(task.getUrl());
+            conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
+            BufferedInputStream in = new BufferedInputStream(conn.getInputStream());
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+
+            synchronized (lock) {
+                raf.seek(start);
+            }
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            while ((bytesRead = in.read(buffer)) != -1) {
+                raf.write(buffer, 0, bytesRead);
+                synchronized (lock) {
+                    task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
+                    taskMapper.updateById(task);
+                }
+            }
+
+            if (task.getTotalDownloaded() == task.getSize()) {
+                log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());
+                task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
+                taskMapper.updateById(task);
+            }
+
+            in.close();
+            raf.close();
+            conn.disconnect();
+        } catch (IOException | URISyntaxException e) {
+            log.error("Download chunk error id:{} err:{}", task.getId(), e.getMessage());
+            task.setStatus(Constants.TASK_STATUS_FAILED);
+            taskMapper.updateById(task);
+        }
     }
 
     private int getChunkSize(long fileSize) {
@@ -65,12 +134,15 @@ public class TaskServiceImpl implements TaskService {
         int chunkNums = (int) ((fileSize + chunkSize - 1) / chunkSize);
 
         String fileName = extractFileName(conn, urlString);
+        String ext = fileName.substring(fileName.lastIndexOf("."));
         String outputPath = downloadPath + "/" + fileName;
+
+        log.info("Init a task, id:{} fileSize:{} savePath:{} chunkSize:{} chunkNums:{}", id, fileSize, outputPath, chunkSize, chunkNums);
 
         Task task = new Task(
                 id,
                 fileName,
-                conn.getContentType(),
+                ext,
                 fileSize,
                 urlString,
                 outputPath,
@@ -87,17 +159,7 @@ public class TaskServiceImpl implements TaskService {
     private HttpURLConnection getConn(String urlStr) throws IOException, URISyntaxException {
         URI uri = new URI(urlStr);
         URL url = uri.toURL();
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36");
-        conn.setRequestProperty("Accept", "*/*");
-
-        int respCode = conn.getResponseCode();
-        if (respCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to fetch file: HTTP response code " + respCode);
-        }
-        return conn;
+        return (HttpURLConnection) url.openConnection();
     }
 
     private String extractFileName(HttpURLConnection connection, String urlString) {
