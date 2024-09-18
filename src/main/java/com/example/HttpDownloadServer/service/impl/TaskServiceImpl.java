@@ -51,18 +51,18 @@ public class TaskServiceImpl implements TaskService {
         // Asynchronous processing download
         CompletableFuture.runAsync(() -> {
             try {
-                processDownload(taskId, url);
+                Task task = initOneTask(taskId, url);
+                processDownload(task);
             } catch (IOException | URISyntaxException e) {
                 log.error("Submit task error id:{} err:{}", taskId, e.getMessage(), e);
                 result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                result.setMessage(e.getMessage());
+                result.setMessage(Constants.ERR_SUBMIT_TASK);
             }
         });
         return result;
     }
 
-    private void processDownload(String taskId, String url) throws IOException, URISyntaxException {
-        Task task = initOneTask(taskId, url);
+    private void processDownload(Task task) throws IOException, URISyntaxException {
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
         File outputFile = new File(task.getSavePath());
 
@@ -195,12 +195,46 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Result<List<String>> restart(List<String> ids) {
-        return null;
+        Result<List<String>> result = new Result<>();
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADED)) {
+                task.setStatus(Constants.TASK_STATUS_PENDING);
+                task.setTotalDownloaded(0);
+                task.setProgress(0);
+                task.setSpeed(0);
+                taskMapper.updateById(task);
+
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        processDownload(task);
+                    } catch (IOException | URISyntaxException e) {
+                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
+                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                        result.setMessage(Constants.ERR_SUBMIT_TASK);
+                    }
+                });
+            } else {
+                log.error("The task status is not downloaded id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                result.setMessage(Constants.ERR_SUBMIT_TASK);
+            }
+        }
+
+        return result;
     }
 
     @Override
     public Result<List<String>> delete(List<String> ids) {
-        return null;
+        Result<List<String>> result = new Result<>();
+        taskMapper.deleteByIds(ids);
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
     }
 
     @Override

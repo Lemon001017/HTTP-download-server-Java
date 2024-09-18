@@ -145,6 +145,30 @@ ids: json   Desc: List of task ids
 ids: json   Desc: Task ids
 ```
 
+## 7. SSE interface
+
+### Method
+
+`GET`
+
+### Path
+
+```
+/api/event/{taskId}
+```
+
+### Request
+
+```
+taskId: json
+```
+
+### Response
+
+```
+null
+```
+
 # Settings
 
 ## 1.Save settings
@@ -221,3 +245,6 @@ Sample:
     }
 }
 ```
+
+# File
+

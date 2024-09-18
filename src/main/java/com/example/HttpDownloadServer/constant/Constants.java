@@ -33,16 +33,15 @@ public final class Constants {
     public static final HTTPStatusParam STORAGE_READ_ERROR = new HTTPStatusParam(500, HttpStatus.INTERNAL_SERVER_ERROR, "Resource read failed");
     public static final HTTPStatusParam STORAGE_ADDRESS_ERROR = new HTTPStatusParam(507, HttpStatus.INSUFFICIENT_STORAGE, "Store address error");
 
-    // HTTP code
+    // HTTP Code
     public static final String HTTP_STATUS_OK = "200";
     public static final String HTTP_STATUS_BAD_REQUEST = "400";
-    public static final String HTTP_STATUS_NOT_FOUND = "404";
     public static final String HTTP_STATUS_SERVER_ERROR = "500";
 
     // Settings Error
     public static final String ERR_SAVE_SETTINGS = "Failed to save settings";
     public static final String ERR_GET_SETTINGS = "Failed to get settings";
 
-    // Task Errror
+    // Task Error
     public static final String ERR_SUBMIT_TASK = "Failed to submit task";
 }
