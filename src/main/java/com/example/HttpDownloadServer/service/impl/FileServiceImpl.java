@@ -39,13 +39,10 @@ public class FileServiceImpl implements FileService {
                     .filter(path -> !Files.isDirectory(path))
                     // 返回处理成相对路径的Path流
                     .map(rootLocation::relativize);
-            // 将 Path流转换为File流
-            Stream<File> fileStream = pathStream.map(path -> new File(String.valueOf(rootLocation.resolve(path))));
-            // 将File流数据转换为筛选后的文件列表
-            ArrayList<com.example.HttpDownloadServer.entity.File> fileList = filterFilesByType(fileStream, params);
+            // 将Path流数据转换为筛选后的文件列表
+            ArrayList<com.example.HttpDownloadServer.entity.File> fileList = filterFilesByType(pathStream, params);
             // 关闭流
             pathStream.close();
-            fileStream.close();
             result.setCode(Constants.HTTP_STATUS_OK);
             return result.setData(fileList);
         } catch (IOException e) {
@@ -54,11 +51,15 @@ public class FileServiceImpl implements FileService {
     }
 
     /**
-     * 流处理，进行过滤、提取、排序、整理
+     * 流处理，进行解析、过滤、提取、排序、整理
      **/
-    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<File> fileList, FileParams fileParams) {
+    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParams fileParams) {
         //
-        return fileList.filter(file -> switch (fileParams.getType()) {
+        return pathStream
+                // 解析
+                .map(path -> new File(String.valueOf(rootLocation.resolve(path))))
+                // 过滤
+                .filter(file -> switch (fileParams.getType()) {
                     case "All" -> true; // 如果类型为 All，则返回所有文件
                     case "Video" -> file.getName().endsWith(".mp4") || file.getName().endsWith(".mov");
                     case "Photo" ->
@@ -67,11 +68,13 @@ public class FileServiceImpl implements FileService {
                             file.getName().endsWith(".zip") || file.getName().endsWith(".rar") || file.getName().endsWith(".tar");
                     case "Document" ->
                             file.getName().endsWith(".pptx") || file.getName().endsWith(".docx") || file.getName().endsWith(".xlsx");
-                    default -> false; // 默认情况下返回 false
+                    default -> true;
                 })
+                // 提取
                 .map(file -> new com.example.HttpDownloadServer.entity.File(
                         file.getName(), file.getPath().substring(18), file.length(), new Date(file.lastModified())
                 ))
+                // 排序
                 .sorted((com.example.HttpDownloadServer.entity.File f1, com.example.HttpDownloadServer.entity.File f2) -> switch (fileParams.getSort()) {
                     case "name" ->
                             (fileParams.getOrder().equals("up")) ? f1.getName().compareTo(f2.getName()) : f2.getName().compareTo(f1.getName());
@@ -81,6 +84,7 @@ public class FileServiceImpl implements FileService {
                             (fileParams.getOrder().equals("up")) ? Long.compare(f1.getGmtModified().getTime(), f2.getGmtModified().getTime()) : Long.compare(f2.getGmtModified().getTime(), f1.getGmtModified().getTime());
                     default -> 0;
                 })
+                // 整理
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
