@@ -34,6 +34,7 @@ public class TaskController {
      */
     @PostMapping("/pause")
     public Result<List<String>> pause(@RequestBody List<String> ids) {
+        log.info("Pause tasks:{}", ids);
         return taskService.pause(ids);
     }
 
@@ -42,6 +43,7 @@ public class TaskController {
      */
     @PostMapping("/resume")
     public Result<List<String>> resume(@RequestBody List<String> ids) {
+        log.info("Resume tasks:{}", ids);
         return taskService.resume(ids);
     }
 
@@ -68,7 +70,7 @@ public class TaskController {
      */
     @GetMapping("/list")
     public Result<List<Task>> getTaskList(@RequestParam String status) {
+        log.info("Get task list with status:{}", status);
         return taskService.getTaskList(status);
     }
-
 }

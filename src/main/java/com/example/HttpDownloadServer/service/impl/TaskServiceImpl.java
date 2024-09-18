@@ -239,6 +239,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Result<List<Task>> getTaskList(String status) {
-        return null;
+        Result<List<Task>> result = new Result<>();
+        result.setData(taskMapper.getTasksByStatus(status));
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
     }
 }
