@@ -166,7 +166,7 @@ taskId: json
 ### Response
 
 ```
-null
+taskId: json
 ```
 
 # Settings

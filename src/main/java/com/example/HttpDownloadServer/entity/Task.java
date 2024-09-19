@@ -7,6 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.Date;
+
 @TableName("task")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -54,7 +57,11 @@ public class Task {
     @TableField("chunk_size")
     private int chunkSize;
 
-    public Task(String id, String name, String type, long size, String url, String savePath, String status, int threads, int chunkNum, int chunkSize) {
+    @TableField("gmt_created")
+    private LocalDateTime gmtCreated;
+
+    public Task(String id, String name, String type, long size, String url,
+                String savePath, String status, int threads, int chunkNum, int chunkSize, LocalDateTime gmtCreated) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -65,5 +72,6 @@ public class Task {
         this.threads = threads;
         this.chunkNum = chunkNum;
         this.chunkSize = chunkSize;
+        this.gmtCreated = gmtCreated;
     }
 }

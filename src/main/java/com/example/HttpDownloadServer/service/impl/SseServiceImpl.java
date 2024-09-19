@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class SseServiceImpl implements SseService {
     @Override
-    public Result handleSse(String id) {
+    public Result<String> handleSse(String id) {
         return null;
     }
 }

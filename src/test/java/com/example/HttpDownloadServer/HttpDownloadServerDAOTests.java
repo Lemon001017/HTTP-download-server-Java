@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,15 +50,15 @@ class HttpDownloadServerDAOTests {
 
     @Test
     public void testAddTask() {
-        taskMapper.deleteById(1);
+        taskMapper.deleteById("1");
         Task task = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "test",
-                1, 1.0, 1.0, 1.0, 1, 1
+                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
         int result = taskMapper.insert(task);
         assertEquals(1, result);
-        taskMapper.deleteById(1);
+        taskMapper.deleteById("1");
     }
 
     @Test
@@ -66,12 +67,12 @@ class HttpDownloadServerDAOTests {
         Task task1 = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "test",
-                1, 1.0, 1.0, 1.0, 1, 1
+                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
 
         Task task2 = new Task(
                 "2", "test2", "test2", 12L, 5, "test2", "test2",
-                "test2", 1, 1.0, 1.0, 1.0, 1, 1
+                "test2", 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
         int res = taskMapper.insert(task1);
         res = taskMapper.insert(task2);

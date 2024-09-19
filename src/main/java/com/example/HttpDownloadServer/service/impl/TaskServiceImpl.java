@@ -20,6 +20,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -149,7 +150,8 @@ public class TaskServiceImpl implements TaskService {
                 Constants.TASK_STATUS_PENDING,
                 Constants.DEFAULT_THREADS,
                 chunkNums,
-                chunkSize
+                chunkSize,
+                LocalDateTime.now()
         );
 
         taskMapper.insert(task);

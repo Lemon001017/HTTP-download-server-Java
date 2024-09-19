@@ -13,7 +13,6 @@ public class SettingsController {
     private SettingsService settingsService;
 
     /**
-     * @param null
      * @return settings
      */
     @GetMapping("")

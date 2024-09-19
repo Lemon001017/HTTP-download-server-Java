@@ -27,11 +27,8 @@ public final class Constants {
 
     // HTTP Status
     public static final HTTPStatusParam DOWNLOAD_TIMEOUT = new HTTPStatusParam(504, HttpStatus.GATEWAY_TIMEOUT, "download time out");
-    public static final HTTPStatusParam RESOURCE_NOTFOUND = new HTTPStatusParam(503, HttpStatus.SERVICE_UNAVAILABLE, "The URL resource cannot be accessed");
-    public static final HTTPStatusParam DOWNLOAD_SERVER_TERMINATION = new HTTPStatusParam(501, HttpStatus.NOT_IMPLEMENTED, "Termination of download service");
     public static final HTTPStatusParam STORAGE_INIT_ERROR = new HTTPStatusParam(510, HttpStatus.NOT_EXTENDED, "Storage initialization failed");
     public static final HTTPStatusParam STORAGE_READ_ERROR = new HTTPStatusParam(500, HttpStatus.INTERNAL_SERVER_ERROR, "Resource read failed");
-    public static final HTTPStatusParam STORAGE_ADDRESS_ERROR = new HTTPStatusParam(507, HttpStatus.INSUFFICIENT_STORAGE, "Store address error");
 
     // HTTP Code
     public static final String HTTP_STATUS_OK = "200";
