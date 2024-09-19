@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -37,7 +38,7 @@ public class TaskServiceImpl implements TaskService {
 
     private static final Object lock = new Object();
 
-    private final ConcurrentHashMap<String, List<Future<?>>> runningTasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
 
     private final ThreadPoolExecutor downloadExecutor = new ThreadPoolExecutor(4, 8,
             60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(100));
@@ -66,13 +67,16 @@ public class TaskServiceImpl implements TaskService {
     private void processDownload(Task task) throws IOException, URISyntaxException {
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
         File outputFile = new File(task.getSavePath());
+        List<Future<?>> futures = new ArrayList<>();
 
         // Submit the fragment for download
         for (int i = 0; i < task.getChunkNum(); i++) {
             int start = i * task.getChunkSize();
             int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
-            downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile));
+            Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile));
+            futures.add(future);
         }
+        chunkFutures.put(task.getId(), futures);
     }
 
     private void downloadChunk(Task task, int start, int end, File file) {
@@ -90,6 +94,15 @@ public class TaskServiceImpl implements TaskService {
             int bytesRead;
 
             while ((bytesRead = in.read(buffer)) != -1) {
+                // Check whether the current thread is interrupted
+                if (Thread.currentThread().isInterrupted()) {
+                    log.info("Download paused for task id:{} url:{}", task.getId(), task.getUrl());
+                    in.close();
+                    raf.close();
+                    conn.disconnect();
+                    return;
+                }
+
                 raf.write(buffer, 0, bytesRead);
                 synchronized (lock) {
                     task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
@@ -107,7 +120,7 @@ public class TaskServiceImpl implements TaskService {
             raf.close();
             conn.disconnect();
         } catch (IOException | URISyntaxException e) {
-            log.error("Download chunk error id:{} err:{}", task.getId(), e.getMessage());
+            log.error("Download failed id:{} err:{}", task.getId(), e.getMessage());
             task.setStatus(Constants.TASK_STATUS_FAILED);
             taskMapper.updateById(task);
         }
@@ -187,22 +200,60 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public Result<List<String>> pause(List<String> ids) {
-        return null;
+        Result<List<String>> result = new Result<>();
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADING)) {
+                task.setStatus(Constants.TASK_STATUS_CANCELED);
+                taskMapper.updateById(task);
+                for (Future<?> future : chunkFutures.get(task.getId())) {
+                    future.cancel(true);
+                }
+            } else {
+                log.error("The task status is not downloading id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
+                result.setMessage("Task status is not downloading");
+                return result;
+            }
+        }
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
     }
 
     @Override
     public Result<List<String>> resume(List<String> ids) {
-        return null;
+        Result<List<String>> result = new Result<>();
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_CANCELED)) {
+                task.setStatus(Constants.TASK_STATUS_PENDING);
+                task.setSpeed(0);
+                taskMapper.updateById(task);
+
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        processDownload(task);
+                    } catch (IOException | URISyntaxException e) {
+                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
+                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                        result.setMessage("Resume task failed id:{}" + task.getId());
+                    }
+                });
+            } else {
+                log.error("The task status is not canceled id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
+                result.setMessage("Resume task failed id:{}" + task.getId());
+                return result;
+            }
+        }
+        return result;
     }
 
     @Override
     public Result<List<String>> restart(List<String> ids) {
         Result<List<String>> result = new Result<>();
-        result.setData(ids);
-        result.setCode(Constants.HTTP_STATUS_OK);
-
         List<Task> tasks = taskMapper.selectBatchIds(ids);
-
         for (Task task : tasks) {
             if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADED)) {
                 task.setStatus(Constants.TASK_STATUS_PENDING);
@@ -217,16 +268,18 @@ public class TaskServiceImpl implements TaskService {
                     } catch (IOException | URISyntaxException e) {
                         log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
                         result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                        result.setMessage(Constants.ERR_SUBMIT_TASK);
+                        result.setMessage("Restart task failed id:{}" + task.getId());
                     }
                 });
             } else {
                 log.error("The task status is not downloaded id:{} status:{}", task.getId(), task.getStatus());
                 result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                result.setMessage(Constants.ERR_SUBMIT_TASK);
+                result.setMessage("Restart task failed id:{}" + task.getId());
+                return result;
             }
         }
-
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
         return result;
     }
 
