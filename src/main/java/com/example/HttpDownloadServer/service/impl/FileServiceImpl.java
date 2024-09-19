@@ -4,6 +4,7 @@ import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.exception.StorageException;
 import com.example.HttpDownloadServer.param.FileParams;
+import com.example.HttpDownloadServer.param.ResFileParams;
 import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.utils.Result;
 import org.slf4j.Logger;
@@ -25,8 +26,9 @@ public class FileServiceImpl implements FileService {
     private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Override
-    public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParams params) {
-        Result<List<com.example.HttpDownloadServer.entity.File>> result = new Result<>();
+    public Result<ResFileParams> fetchFileList(FileParams params) {
+        Result<ResFileParams> result = new Result<>();
+        // 默认参数处理
         params.disposalFileParams();
         try {
             // Get all folders and files with depth one in the download path
@@ -38,7 +40,7 @@ public class FileServiceImpl implements FileService {
             ArrayList<com.example.HttpDownloadServer.entity.File> fileList = filterFilesByType(pathStream, params);
             pathStream.close();
             result.setCode(Constants.HTTP_STATUS_OK);
-            return result.setData(fileList);
+            return result.setData(new ResFileParams(fileList, fileList.size()));
         } catch (IOException e) {
             log.error("Resource read failed");
             throw new StorageException(Constants.STORAGE_READ_ERROR, e);

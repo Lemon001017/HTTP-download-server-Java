@@ -1,4 +1,4 @@
-package com.example.HttpDownloadServer.controller;
+package com.example.HttpDownloadServer.service.impl;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
