@@ -24,7 +24,7 @@ public class FileController {
 
     @ResponseBody
     @PostMapping("/getFileList")
-    public Result<ResFileParams> getFileList(FileParams params) {
+    public Result<List<File>> getFileList(FileParams params) {
         return fileService.fetchFileList(params);
     }
 }
