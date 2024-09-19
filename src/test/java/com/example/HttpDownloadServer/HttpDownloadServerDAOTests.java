@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +24,7 @@ class HttpDownloadServerDAOTests {
     @Test
     public void testUpdateSettings() {
         settingsMapper.deleteById(1);
-        Settings settings = new Settings(1, "test", 2, 3);
+        Settings settings = new Settings(1, "test", 2, 3.0);
         int result = settingsMapper.insert(settings);
         assertEquals(1, result);
 
@@ -49,25 +50,33 @@ class HttpDownloadServerDAOTests {
 
     @Test
     public void testAddTask() {
-        taskMapper.deleteById(1);
-        Task task = new Task("1", "test", "test", 1L, "test", "test",
-                "test", 1, 1.0, 1.0, 1.0, 1, 1);
+        taskMapper.deleteById("1");
+        Task task = new Task(
+                "1", "test", "test",
+                10L, 10, "test", "test", "test",
+                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+        );
         int result = taskMapper.insert(task);
         assertEquals(1, result);
-        taskMapper.deleteById(1);
+        taskMapper.deleteById("1");
     }
 
     @Test
     public void testGetTasksById() {
         taskMapper.deleteByIds(List.of("1", "2"));
-        Task task1 = new Task("1", "test", "test", 10L, "test", "test",
-                "test", 1, 1.0, 1.0, 1.0, 1, 1);
-        Task task2 = new Task("2", "test2", "test2", 12L, "test2", "test2",
-                "test2", 1, 1.0, 1.0, 1.0, 1, 1);
-        taskMapper.insert(task1);
-        taskMapper.insert(task2);
-        List<String> ids = List.of("1", "2");
-        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        Task task1 = new Task(
+                "1", "test", "test",
+                10L, 10, "test", "test", "test",
+                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+        );
+
+        Task task2 = new Task(
+                "2", "test2", "test2", 12L, 5, "test2", "test2",
+                "test2", 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+        );
+        int res = taskMapper.insert(task1);
+        res = taskMapper.insert(task2);
+        List<Task> tasks = taskMapper.selectBatchIds(List.of("1", "2"));
         assertEquals(2, tasks.size());
         taskMapper.deleteByIds(List.of("1", "2"));
     }
@@ -88,7 +97,7 @@ class HttpDownloadServerDAOTests {
 
         List<Task> tasks = taskMapper.getTasksByStatus(Constants.TASK_STATUS_DOWNLOADING);
         assertEquals(1, tasks.size());
-        assertEquals("url1", tasks.get(0).getUrl());
+        assertEquals("url1", tasks.getFirst().getUrl());
 
         tasks = taskMapper.getTasksByStatus(Constants.TASK_STATUS_CANCELED);
         assertEquals(0, tasks.size());

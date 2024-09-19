@@ -7,15 +7,6 @@ public class Result<D> implements Serializable {
     private String message;
     private D data;
 
-    public static <T> Result<T> create() {
-        return new Result<T>();
-    }
-
-    public static Result<?> buildSuccess() {
-        Result<?> result = new Result<>();
-        return result;
-    }
-
     public String getCode() {
         return code;
     }

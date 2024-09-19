@@ -25,6 +25,5 @@ public class DownloadException extends ResponseStatusException {
     public DownloadException(HTTPStatusParam param, Throwable cause) {
         super(param.httpStatus, param.message);
     }
-
 }
 

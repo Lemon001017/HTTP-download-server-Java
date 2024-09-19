@@ -14,10 +14,13 @@ import lombok.NoArgsConstructor;
 public class Settings {
     @TableId("id")
     private Integer id;
+
     @TableField("download_path")
     private String downloadPath;
+
     @TableField("max_tasks")
-    private Integer maxTasks;
+    private int maxTasks;
+
     @TableField("max_download_speed")
     private double maxDownloadSpeed;
 }

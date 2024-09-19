@@ -13,7 +13,6 @@ public class SettingsController {
     private SettingsService settingsService;
 
     /**
-     * @param null
      * @return settings
      */
     @GetMapping("")
@@ -25,7 +24,6 @@ public class SettingsController {
      * @param settings object
      * @return settings
      */
-
     @PostMapping("")
     public Result<Settings> saveSettings(@RequestBody Settings settings) {
         return settingsService.updateSettings(settings);

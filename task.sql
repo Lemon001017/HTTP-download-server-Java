@@ -19,6 +19,7 @@ CREATE TABLE `task`  (
   `remaining_time` double NULL DEFAULT NULL,
   `chunk_num` int NULL DEFAULT NULL,
   `chunk_size` int NULL DEFAULT NULL,
+  `gmt_created` datetime NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 

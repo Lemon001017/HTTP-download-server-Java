@@ -145,6 +145,30 @@ ids: json   Desc: List of task ids
 ids: json   Desc: Task ids
 ```
 
+## 7. SSE interface
+
+### Method
+
+`GET`
+
+### Path
+
+```
+/api/event/{taskId}
+```
+
+### Request
+
+```
+taskId: json
+```
+
+### Response
+
+```
+taskId: json
+```
+
 # Settings
 
 ## 1.Save settings
@@ -218,6 +242,66 @@ Sample:
         "downloadPath": "/test1",
         "maxTasks": 4,
         "maxDownloadSpeed": 1.3
+    }
+}
+```
+
+# File
+
+
+## 1.Get Files
+
+### Method
+
+`POST`
+
+### Path
+
+```
+/getFileList
+```
+
+### Request
+
+```
+FileParams : json   Desc: Parameter set of file query
+Sample:
+{
+    "type": "All"/"Video"/"Photo"/"Archive"/"Document",
+    "sort": "name"/"size"/"gmtCreated",
+    "order": "up"/"down",
+}
+```
+
+### Response
+
+```
+Result: json   Desc: Result is an object with a request body in JSON format
+Sample:
+{
+    "code": "200",
+    "data": {
+        "fileList": [
+            {
+                "name": "1-10.mp4",
+                "path": "\\storage\\1-10.mp4",
+                "size": 32003339,
+                "gmtModified": "2024-09-18T14:52:31.026+00:00"
+            },
+            {
+                "name": "PixPin_2024-08-22_19-11-22.png",
+                "path": "\\storage\\PixPin_2024-08-22_19-11-22.png",
+                "size": 15997,
+                "gmtModified": "2024-08-22T11:11:23.778+00:00"
+            },
+            {
+                "name": "b_54f53e1c231f2713ed264effe7a1b68b.jpg",
+                "path": "\\storage\\b_54f53e1c231f2713ed264effe7a1b68b.jpg",
+                "size": 41590,
+                "gmtModified": "2024-08-22T07:53:28.126+00:00"
+            }
+        ],
+        "total": 3
     }
 }
 ```

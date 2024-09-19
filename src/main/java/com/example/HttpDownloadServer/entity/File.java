@@ -10,11 +10,8 @@ import java.util.Date;
 @AllArgsConstructor
 @Data
 public class File {
-    private String id;
     private String name;
     private String path;
-    private boolean isDir;
     private long size;
-    private Date gmtCreated;
     private Date gmtModified;
 }
