@@ -40,7 +40,7 @@ onMounted(async()=>{
         <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
             <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
         </el-header>
-        <div class="flex md:flex-row md:justify-between md:mx-[200px]">
+        <div class="flex mt-4 md:flex-row md:justify-between md:mx-[300px]">
             <SideBar />
             <div style="flex-grow: 1;margin-top: 40px;margin-left: 40px;">
                 <el-col>

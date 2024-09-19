@@ -53,10 +53,10 @@ const selectedOptions = ref([])
         <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
             <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
         </el-header>
-        <div class="flex md:flex-row md:justify-between md:mx-[200px]">
+        <div class="flex mt-4 md:flex-row md:justify-between md:mx-[300px]">
             <SideBar />
-            <div style="flex-grow: 1;margin-top: 40px;">
-                <el-col class="flex justify-center align-center w-[80vw]">
+            <div class="flex-1 mt-[20px]">
+                <el-col class="flex justify-center align-center w-[100%]">
                     <el-row justify="space-between">
                         <el-col :span="16">
                             <el-input v-model="urlInput" size="large" style="width: 100%;margin-left: 40px;"
@@ -67,14 +67,19 @@ const selectedOptions = ref([])
                         </el-col>
                     </el-row>
                 </el-col>
-                <el-col style="margin-left: 40px;">
+                <el-col class="ml-[40px]">
                     <el-select v-model="value" placeholder="Select" style="width: 240px">
                         <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-col>
-                <div class="w-[75vw] ml-[25px]">
-                    <div v-for="(item, index) in data" :key="index" class="border-2 m-4">
-                        <div class="m-4 w-[70vw]" style="display: flex;">
+                <div class="flex justify-end w-[95%]">
+                    <el-button type="primary" size="small">重新下载</el-button>
+                    <el-button type="success" size="small">继续下载</el-button>
+                    <el-button type="danger" size="small">删除任务</el-button>
+                </div>
+                <div class="w-[95%] ml-[25px]">
+                    <div v-for="(item, index) in data" :key="index" class="border-2 m-4 rounded-xl">
+                        <div class="mx-2 my-4" style="display: flex;">
                             <input type="checkbox" :id="`option-${index}`" :value="item.value"
                                 v-model="selectedOptions" class="p-2 w-[18px] mx-4">
                             <div class="m-4 flex flex-col flex-1 ">
@@ -82,9 +87,9 @@ const selectedOptions = ref([])
                                     <label class="w-[20vw] flex-none" :for="`option-${index}`">{{ item.label }}</label>
                                     <el-input-number v-model="taskNum" :min="1" :max="10" @change="handleChange" />
                                     <div class="flex">
-                                        <img src="../assets/shuaxin.svg" class="h-[16px] m-[5px]">
-                                        <img src="../assets/kaishi.svg" class="h-[16px] m-[5px]">
-                                        <img src="../assets/shanchu.svg" class="h-[16px] m-[5px]">
+                                        <img src="../assets/shuaxin.svg" class="h-[20px] m-[5px]">
+                                        <img src="../assets/kaishi.svg" class="h-[20px] m-[5px]">
+                                        <img src="../assets/shanchu.svg" class="h-[24px] m-[4px]">
                                     </div>
                                 </div>
                                 <div class="mt-2">
