@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import SideBar from '../components/SideBar.vue'
 import backend from '../backend'
 
@@ -7,19 +7,32 @@ import backend from '../backend'
 const taskNum = ref(1)
 const speedNum = ref(1)
 const downloadPath = ref('')
+const userId = ref()
 
 async function saveSetting() {
-    await backend.post('/api/settings',{
-        Sample:{
-            id:1,
-            downloadPath:"/test1",
-            maxTasks:-1,
-            maxDownloadSpeed:1.3
-        }
-    })
-
+    await backend.post('/api/settings', {
+        id: userId.value,
+        downloadPath: downloadPath.value,
+        maxTasks: taskNum.value,
+        maxDownloadSpeed: speedNum.value
+    }
+    )
 }
 
+async function  getSetting() {
+    const getData = await backend.get('/api/settings')
+    if(getData.code==200){
+        downloadPath.value = getData.data.downloadPath;
+        taskNum.value = getData.data.maxTasks;
+        speedNum.value = getData.data.maxDownloadSpeed;
+        userId.value = getData.data.id;
+    }
+    
+}
+
+onMounted(async()=>{
+    getSetting()
+})
 
 </script>
 <template>
@@ -27,7 +40,7 @@ async function saveSetting() {
         <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
             <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
         </el-header>
-        <div style="display: flex;">
+        <div class="flex md:flex-row md:justify-between md:mx-[200px]">
             <SideBar />
             <div style="flex-grow: 1;margin-top: 40px;margin-left: 40px;">
                 <el-col>

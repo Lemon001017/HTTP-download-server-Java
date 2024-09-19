@@ -25,9 +25,9 @@ const tableData = [
     <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
       <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
     </el-header>
-    <div style="display: flex;">
+    <div class="flex md:flex-row md:justify-between md:mx-[200px]">
       <SideBar />
-      <div style="flex-grow: 1;margin-top: 20px;">
+      <div class="flex-1 mt-[20px]">
         <el-row justify="space-between">
           <el-col :span="8">
             香菜说这是文件路径
@@ -39,7 +39,7 @@ const tableData = [
           </el-col>
         </el-row>
         <div style="margin: 20px;">
-          <el-table :data="tableData" style="width: 100%">
+          <el-table :data="tableData" >
             <el-table-column prop="fileName" label="File name" sortable  />
             <el-table-column prop="size" label="Size" sortable  />
             <el-table-column prop="createTime" sortable label="Create time" />

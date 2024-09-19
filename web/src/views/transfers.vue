@@ -53,7 +53,7 @@ const selectedOptions = ref([])
         <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
             <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
         </el-header>
-        <div style="display: flex;">
+        <div class="flex md:flex-row md:justify-between md:mx-[200px]">
             <SideBar />
             <div style="flex-grow: 1;margin-top: 40px;">
                 <el-col class="flex justify-center align-center w-[80vw]">
@@ -76,7 +76,7 @@ const selectedOptions = ref([])
                     <div v-for="(item, index) in data" :key="index" class="border-2 m-4">
                         <div class="m-4 w-[70vw]" style="display: flex;">
                             <input type="checkbox" :id="`option-${index}`" :value="item.value"
-                                v-model="selectedOptions">
+                                v-model="selectedOptions" class="p-2 w-[18px] mx-4">
                             <div class="m-4 flex flex-col flex-1 ">
                                 <div class="flex justify-between ">
                                     <label class="w-[20vw] flex-none" :for="`option-${index}`">{{ item.label }}</label>
