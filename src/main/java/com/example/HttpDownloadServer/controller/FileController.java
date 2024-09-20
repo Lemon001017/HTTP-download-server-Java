@@ -2,7 +2,6 @@ package com.example.HttpDownloadServer.controller;
 
 import com.example.HttpDownloadServer.entity.File;
 import com.example.HttpDownloadServer.param.FileParams;
-import com.example.HttpDownloadServer.param.ResFileParams;
 import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.utils.Result;
 import org.slf4j.Logger;

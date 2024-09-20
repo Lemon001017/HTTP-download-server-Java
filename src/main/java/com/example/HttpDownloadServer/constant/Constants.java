@@ -41,4 +41,6 @@ public final class Constants {
 
     // Task Error
     public static final String ERR_SUBMIT_TASK = "Failed to submit task";
+
+    public static final long MessageInterval = 300;
 }
