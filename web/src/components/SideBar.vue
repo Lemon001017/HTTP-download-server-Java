@@ -35,7 +35,7 @@ watchEffect(() => {
                 </el-icon>
                 <template #title>
                     <span class="el-submenu">
-                        file
+                        File
                     </span>
                 </template>
             </el-menu-item>
@@ -45,7 +45,7 @@ watchEffect(() => {
                 </el-icon>
                 <template #title>
                     <span class="el-submenu">
-                        transfers
+                        Transfers
                     </span>
                 </template>
             </el-menu-item>
@@ -55,7 +55,7 @@ watchEffect(() => {
                 </el-icon>
                 <template #title>
                     <span class="el-submenu">
-                        settings
+                        Settings
                     </span>
                 </template>
             </el-menu-item>

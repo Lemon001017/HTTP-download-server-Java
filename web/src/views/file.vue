@@ -20,27 +20,23 @@ const tableData = [
 ]
 
 async function saveSetting(val) {
-  await backend.post('/getFileList', {
+  const data = await backend.post('/api/file/list', {
     type:val,
-    // sort:
-    // order:
-  }
-  )
-  console.log(`${val}`)
+  })
 }
 
 </script>
 <template>
   <div>
-    <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
-      <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
+    <el-header class="bg-black text-white w-[100%] text-xl font-bold flex items-center">
+      <h3 class="p-1 md:ml-[300px]">Download Server</h3>
     </el-header>
     <div class="flex mt-4 md:flex-row md:justify-between md:mx-[300px]">
       <SideBar />
       <div class="flex-1 mt-[20px]">
         <el-row justify="space-between">
-          <el-col :span="8">
-            香菜说这是文件路径
+          <el-col :span="4">
+            /storage
           </el-col>
           <el-col :span="12">
             <el-select v-model="value" placeholder="Select" @change="saveSetting" class="w-[240px]">
@@ -50,9 +46,10 @@ async function saveSetting(val) {
         </el-row>
         <div style="margin: 20px;">
           <el-table :data="tableData">
-            <el-table-column prop="fileName" label="File name" sortable />
-            <el-table-column prop="size" label="Size" sortable />
-            <el-table-column prop="createTime" sortable label="Create time" />
+            <el-table-column prop="name" label="File name" sortable />
+            <el-table-column prop="path" label="Path"  />
+            <el-table-column prop="size" sortable label="Size" />
+            <el-table-column prop="gmtModified" sortable label="Create time" />
           </el-table>
         </div>
       </div>
