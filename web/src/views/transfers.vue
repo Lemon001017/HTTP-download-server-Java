@@ -59,17 +59,8 @@ const selectedOptions = ref([])
             <SideBar />
             <div class="flex-1 mt-[20px]">
                 <el-col class="flex justify-center align-center w-[100%]">
-                    <!-- <el-row justify="space-between">
-                        <el-col :span="16">
-                            <el-input v-model="urlInput" size="large" style="width: 100%;margin-left: 40px;"
-                                placeholder="Please input" />
-                        </el-col>
-                        <el-col :span="8">
-                            <el-button type="primary" round>Submit</el-button>
-                        </el-col>
-                    </el-row> -->
-                    <div class="flex justify-center align-center w-[100%] mb-4">
-                        <el-input v-model="urlInput" size="large" class="flex-1 ml-[40px]" placeholder="Please input" />
+                    <div class="flex justify-center align-center w-[100%] mb-4 mx-10">
+                        <el-input v-model="urlInput" size="large" class="flex-1" placeholder="Please input" />
                         <el-button type="primary" round>Submit</el-button>
                     </div>
                 </el-col>

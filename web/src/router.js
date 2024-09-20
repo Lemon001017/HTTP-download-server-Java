@@ -1,14 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HelloWorld from "./views/HelloWorld.vue"
 import file from "./views/file.vue"
 import settings from "./views/settings.vue"
 import transfers from "./views/transfers.vue"
 
 const routes = [
     {
-        path: '/',
-        name:'Home',
-        component:HelloWorld,
+        path: '/', 
+        redirect: '/file'
     },
     {
         path: '/file',

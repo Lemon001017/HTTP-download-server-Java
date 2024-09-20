@@ -6,14 +6,6 @@ const activeIndex = ref('/');
 
 const router = useRouter();
 
-const handleOpen = (key, keyPath) => {
-    console.log(key, keyPath);
-};
-
-const handleClose = (key, keyPath) => {
-    console.log(key, keyPath);
-};
-
 onMounted(() => {
     const currentRoute = router.currentRoute.value.fullPath;
     activeIndex.value = currentRoute;
