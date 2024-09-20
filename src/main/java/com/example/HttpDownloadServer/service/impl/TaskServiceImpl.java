@@ -65,6 +65,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void processDownload(Task task) throws IOException, URISyntaxException {
+        long startTime = System.currentTimeMillis();
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
         File outputFile = new File(task.getSavePath());
         List<Future<?>> futures = new ArrayList<>();
@@ -73,13 +74,13 @@ public class TaskServiceImpl implements TaskService {
         for (int i = 0; i < task.getChunkNum(); i++) {
             int start = i * task.getChunkSize();
             int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
-            Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile));
+            Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime));
             futures.add(future);
         }
         chunkFutures.put(task.getId(), futures);
     }
 
-    private void downloadChunk(Task task, int start, int end, File file) {
+    private void downloadChunk(Task task, int start, int end, File file, long startTime) {
         try {
             HttpURLConnection conn = getConn(task.getUrl());
             conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
@@ -92,6 +93,8 @@ public class TaskServiceImpl implements TaskService {
 
             byte[] buffer = new byte[4096];
             int bytesRead;
+
+            long lastMessageTime = System.currentTimeMillis();
 
             while ((bytesRead = in.read(buffer)) != -1) {
                 // Check whether the current thread is interrupted
@@ -106,12 +109,26 @@ public class TaskServiceImpl implements TaskService {
                 raf.write(buffer, 0, bytesRead);
                 synchronized (lock) {
                     task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
-                    taskMapper.updateById(task);
+                    if (System.currentTimeMillis() - lastMessageTime >= Constants.MessageInterval) {
+                        // Calculate download data
+                        long elapsedTime = System.currentTimeMillis() - startTime;
+                        double speed = Math.round((task.getTotalDownloaded() / (elapsedTime / 1000.0) / 1024 / 1024) * 100.0) / 100.0;
+                        double progress = Math.round((task.getTotalDownloaded() * 1.0 * 100 / task.getSize()) * 100.0) / 100.0;
+                        double remainingTime = Math.round((((task.getSize() - task.getTotalDownloaded()) / 1024.0 / 1024.0) / speed) * 100.0) / 100.0;
+
+                        task.setSpeed(speed);
+                        task.setProgress(progress);
+                        task.setRemainingTime(remainingTime);
+                        taskMapper.updateById(task);
+                        lastMessageTime = System.currentTimeMillis();
+                    }
                 }
             }
 
             if (task.getTotalDownloaded() == task.getSize()) {
                 log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());
+                task.setProgress(100);
+                task.setRemainingTime(0);
                 task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
                 taskMapper.updateById(task);
             }
