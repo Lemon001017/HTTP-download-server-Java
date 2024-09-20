@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/file")
 public class FileController {
     @Autowired
     private FileService fileService;
@@ -23,7 +24,7 @@ public class FileController {
     private static final Logger log = LoggerFactory.getLogger(FileController.class);
 
     @ResponseBody
-    @PostMapping("/getFileList")
+    @PostMapping("/list")
     public Result<List<File>> getFileList(FileParams params) {
         return fileService.fetchFileList(params);
     }
