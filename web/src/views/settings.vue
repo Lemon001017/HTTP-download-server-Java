@@ -19,26 +19,26 @@ async function saveSetting() {
     )
 }
 
-async function  getSetting() {
+async function getSetting() {
     const getData = await backend.get('/api/settings')
-    if(getData.code==200){
+    if (getData.code == 200) {
         downloadPath.value = getData.data.downloadPath;
         taskNum.value = getData.data.maxTasks;
         speedNum.value = getData.data.maxDownloadSpeed;
         userId.value = getData.data.id;
     }
-    
+
 }
 
-onMounted(async()=>{
+onMounted(async () => {
     getSetting()
 })
 
 </script>
 <template>
     <div>
-        <el-header style="background-color: #000; color: #fff; text-align: left;width: 100%;">
-            <h3 style="margin:0%;padding: 1rem;">Download Server</h3>
+        <el-header class="bg-black text-white w-[100%] text-xl font-bold flex items-center">
+            <h3 class="p-1 md:ml-[300px]">Download Server</h3>
         </el-header>
         <div class="flex mt-4 md:flex-row md:justify-between md:mx-[300px]">
             <SideBar />
