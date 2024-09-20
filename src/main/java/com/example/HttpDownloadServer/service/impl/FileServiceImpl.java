@@ -28,30 +28,28 @@ public class FileServiceImpl implements FileService {
     public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParams params) {
         Result<List<com.example.HttpDownloadServer.entity.File>> result = new Result<>();
         params.disposalFileParams();
-        try {
+        try (Stream<Path> pathStream= Files.walk(rootLocation, 1)){
             // Get all folders and files with depth one in the download path
-            Stream<Path> pathStream = Files.walk(rootLocation, 1)
-                    .filter(path -> !path.equals(rootLocation))
-                    .filter(path -> !Files.isDirectory(path))
-                    .map(rootLocation::relativize);
-            // Converts the Path stream data to a filtered list of files
-            ArrayList<com.example.HttpDownloadServer.entity.File> fileList = filterFilesByType(pathStream, params);
-            pathStream.close();
+            List<com.example.HttpDownloadServer.entity.File> fileList= filterFilesByType(pathStream, params);
             result.setCode(Constants.HTTP_STATUS_OK);
-            return result.setData(fileList);
+            result.setData(fileList);
         } catch (IOException e) {
             log.error("Resource read failed");
             throw new StorageException(Constants.STORAGE_READ_ERROR, e);
         }
+        return result;
     }
 
     /**
      * Stream processing, parsing, filtering, extraction, sorting, sorting
      **/
-    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParams fileParams) {
+    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParams params) {
         return pathStream
+                .filter(path -> !path.equals(rootLocation))
+                .filter(path -> !Files.isDirectory(path))
+                .map(rootLocation::relativize)
                 .map(path -> new File(String.valueOf(rootLocation.resolve(path))))
-                .filter(file -> switch (fileParams.getType()) {
+                .filter(file -> switch (params.getType()) {
                     case "Video" -> file.getName().endsWith(".mp4") || file.getName().endsWith(".mov");
                     case "Photo" ->
                             file.getName().endsWith(".png") || file.getName().endsWith(".jpg") || file.getName().endsWith(".gif");
@@ -64,16 +62,15 @@ public class FileServiceImpl implements FileService {
                 .map(file -> new com.example.HttpDownloadServer.entity.File(
                         file.getName(), file.getPath().substring(18), file.length(), new Date(file.lastModified())
                 ))
-                .sorted((com.example.HttpDownloadServer.entity.File f1, com.example.HttpDownloadServer.entity.File f2) -> switch (fileParams.getSort()) {
+                .sorted((com.example.HttpDownloadServer.entity.File f1, com.example.HttpDownloadServer.entity.File f2) -> switch (params.getSort()) {
                     case "name" ->
-                            (fileParams.getOrder().equals("up")) ? f1.getName().compareTo(f2.getName()) : f2.getName().compareTo(f1.getName());
+                            (params.getOrder().equals("up")) ? f1.getName().compareTo(f2.getName()) : f2.getName().compareTo(f1.getName());
                     case "size" ->
-                            (fileParams.getOrder().equals("up")) ? Long.compare(f1.getSize(), f2.getSize()) : Long.compare(f2.getSize(), f1.getSize());
+                            (params.getOrder().equals("up")) ? Long.compare(f1.getSize(), f2.getSize()) : Long.compare(f2.getSize(), f1.getSize());
                     case "gmtCreated" ->
-                            (fileParams.getOrder().equals("up")) ? Long.compare(f1.getGmtModified().getTime(), f2.getGmtModified().getTime()) : Long.compare(f2.getGmtModified().getTime(), f1.getGmtModified().getTime());
+                            (params.getOrder().equals("up")) ? Long.compare(f1.getGmtModified().getTime(), f2.getGmtModified().getTime()) : Long.compare(f2.getGmtModified().getTime(), f1.getGmtModified().getTime());
                     default -> 0;
-                })
-                .collect(Collectors.toCollection(ArrayList::new));
+                }).collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
