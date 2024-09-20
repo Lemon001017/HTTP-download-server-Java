@@ -18,6 +18,9 @@ public final class Constants {
     public static final int MID_CHUNK_SIZE = 1024 * 1024;
     public static final int MAX_CHUNK_SIZE = 10 * 1024 * 1024;
 
+    // Redis Key
+    public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
+
     // Task Status
     public static final String TASK_STATUS_DOWNLOADING = "downloading";
     public static final String TASK_STATUS_DOWNLOADED = "downloaded";
