@@ -28,7 +28,7 @@ public class FileServiceImpl implements FileService {
     public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParams params) {
         Result<List<com.example.HttpDownloadServer.entity.File>> result = new Result<>();
         params.disposalFileParams();
-        try ( Stream<Path> pathStream= Files.walk(rootLocation, 1)){
+        try (Stream<Path> pathStream= Files.walk(rootLocation, 1)){
             // Get all folders and files with depth one in the download path
             List<com.example.HttpDownloadServer.entity.File> fileList= filterFilesByType(pathStream, params);
             result.setCode(Constants.HTTP_STATUS_OK);
