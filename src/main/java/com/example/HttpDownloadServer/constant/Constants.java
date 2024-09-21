@@ -20,6 +20,7 @@ public final class Constants {
 
     // Redis Key
     public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
+    public static final String KEY_CHUNK_HASHMAP_1 = "CHUNK_HASHMAP_1";
 
     // Task Status
     public static final String TASK_STATUS_DOWNLOADING = "downloading";

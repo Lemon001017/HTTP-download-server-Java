@@ -6,10 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class RedisServiceImpl implements RedisService {
@@ -17,30 +14,39 @@ public class RedisServiceImpl implements RedisService {
     private RedisTemplate redisTemplate;
 
     @Override
-    public void initializeScoreboard(String taskId, long chunkNum) {
-        Map<String, Boolean> scoreboard = new HashMap<>();
-        for (long i = 0; i < chunkNum; i++) {
-            scoreboard.put(String.valueOf(i), false);
+    public void initializeScoreboard(String taskId, int chunkNum) {
+        Map<Integer,Boolean> scoreboard=new LinkedHashMap<>(chunkNum);
+        for (int i = 0;i < chunkNum; i++){
+            scoreboard.put(i,false);
         }
-        redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP, taskId, scoreboard);
+        System.out.println(scoreboard);
+        redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP,taskId,scoreboard);
+    }
+    @Override
+    public void updateScoreboard(String taskId, int chunkId) {
+        LinkedHashMap<Integer,Boolean> scoreboard=(LinkedHashMap) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP,taskId);
+        if (scoreboard != null) {
+            scoreboard.put(chunkId,true);
+            redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP,taskId,scoreboard);
+        }
+    }
+    @Override
+    public List<Integer> getScoreboard(String taskId) {
+        List<Integer> chunkIds=new ArrayList<>();
+        List<Integer> synchronizedList = Collections.synchronizedList(chunkIds);
+        LinkedHashMap<Integer,Boolean> scoreboard=(LinkedHashMap) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP,taskId);
+        if (scoreboard != null) {
+            scoreboard.forEach((key,value)->{
+                if (!value){
+                    synchronizedList.add(key);
+                }
+            });
+        }
+        return synchronizedList;
     }
 
     @Override
-    public void updateScoreboard(String taskId, long chunkId) {
-        Map<String, Boolean> scoreboard = (Map) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP, taskId);
-        scoreboard.put(String.valueOf(chunkId), true);
-        redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP, taskId, scoreboard);
-    }
-
-    @Override
-    public List<Long> getScoreboard(String taskId) {
-        List<Long> chunkIds = new ArrayList<>();
-        Map<String, Boolean> scoreboard = (Map) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP, taskId);
-        scoreboard.forEach((key, value) -> {
-            if (!value) {
-                chunkIds.add(Long.valueOf(key));
-            }
-        });
-        return chunkIds;
+    public void deleteScoreboard(String taskId) {
+        redisTemplate.opsForHash().delete(Constants.KEY_CHUNK_HASHMAP, taskId);
     }
 }
