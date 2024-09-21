@@ -28,7 +28,6 @@ public class HttpDownloadServerApplication {
                 settingsMapper.insert(settings);
             }
             fileService.init(settings);
-
         };
     }
 }
