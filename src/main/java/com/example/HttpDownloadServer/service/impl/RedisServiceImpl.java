@@ -1,52 +1,62 @@
 package com.example.HttpDownloadServer.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.TypeReference;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RedisServiceImpl implements RedisService {
+    private final RedisTemplate<String,String> redisTemplate;
     @Autowired
-    private RedisTemplate redisTemplate;
-
+    public RedisServiceImpl(RedisTemplate<String,String> redisTemplate){
+        this.redisTemplate=redisTemplate;
+    }
     @Override
     public void initializeScoreboard(String taskId, int chunkNum) {
-        Map<Integer,Boolean> scoreboard=new LinkedHashMap<>(chunkNum);
+        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+        ConcurrentHashMap<String,Boolean> scoreboard=new ConcurrentHashMap<>(chunkNum);
         for (int i = 0;i < chunkNum; i++){
-            scoreboard.put(i,false);
+            scoreboard.put(String.valueOf(i),false);
         }
-        System.out.println(scoreboard);
-        redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP,taskId,scoreboard);
+        hashOps.put(Constants.KEY_CHUNK_HASHMAP,taskId, JSON.toJSONString(scoreboard));
     }
     @Override
     public void updateScoreboard(String taskId, int chunkId) {
-        LinkedHashMap<Integer,Boolean> scoreboard=(LinkedHashMap) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP,taskId);
+        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+        ConcurrentHashMap<String,Boolean> scoreboard= JSON.parseObject(hashOps.get(Constants.KEY_CHUNK_HASHMAP, taskId),new TypeReference<>() {});
         if (scoreboard != null) {
-            scoreboard.put(chunkId,true);
-            redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP,taskId,scoreboard);
+            scoreboard.put(String.valueOf(chunkId),true);
+            redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP,taskId,JSON.toJSONString(scoreboard));
         }
     }
     @Override
     public List<Integer> getScoreboard(String taskId) {
         List<Integer> chunkIds=new ArrayList<>();
-        List<Integer> synchronizedList = Collections.synchronizedList(chunkIds);
-        LinkedHashMap<Integer,Boolean> scoreboard=(LinkedHashMap) redisTemplate.opsForHash().get(Constants.KEY_CHUNK_HASHMAP,taskId);
+        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+        ConcurrentHashMap<String,Boolean> scoreboard=JSON.parseObject(hashOps.get(Constants.KEY_CHUNK_HASHMAP, taskId),new TypeReference<>() {});
         if (scoreboard != null) {
             scoreboard.forEach((key,value)->{
                 if (!value){
-                    synchronizedList.add(key);
+                    chunkIds.add(Integer.valueOf(key));
                 }
             });
         }
-        return synchronizedList;
+        return chunkIds;
     }
 
     @Override
     public void deleteScoreboard(String taskId) {
-        redisTemplate.opsForHash().delete(Constants.KEY_CHUNK_HASHMAP, taskId);
+        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+        if (hashOps.hasKey(Constants.KEY_CHUNK_HASHMAP, taskId)) {
+            redisTemplate.opsForHash().delete(Constants.KEY_CHUNK_HASHMAP, taskId);
+        }
     }
 }

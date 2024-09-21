@@ -15,13 +15,10 @@ public class HttpDownloadServerImplTests {
 
     @BeforeEach
     public void initRedis() {
-        long st=System.currentTimeMillis();
-        redisService.initializeScoreboard("test", 300);
-        for(int i = 0; i < 100; i++){
+        redisService.initializeScoreboard("test", 10);
+        for(int i = 0; i < 5; i++){
             redisService.updateScoreboard("test", i);
         }
-        long en=System.currentTimeMillis();
-        System.out.println(en-st);
     }
     @AfterEach
     public void clearRedis() {
