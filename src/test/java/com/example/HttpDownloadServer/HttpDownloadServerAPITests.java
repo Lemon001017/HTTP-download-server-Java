@@ -176,8 +176,6 @@ public class HttpDownloadServerAPITests {
         // test Type=Photo and Sort=gmtCreated and Order=up
         FileParams fileParams3 = new FileParams("Photo", "gmtCreated", "up");
         Result<List<com.example.HttpDownloadServer.entity.File>> result3 = fileService.fetchFileList(fileParams3);
-        System.out.println(result3.getData().getFirst().getGmtModified().getTime());
-        System.out.println(result3.getData().getLast().getGmtModified().getTime());
         assertTrue(result3.getData().getFirst().getGmtModified().getTime()<result3.getData().getLast().getGmtModified().getTime());
         result3.getData().forEach(file -> {
             assertTrue(file.getName().endsWith(".png") || file.getName().endsWith(".jpg")|| file.getName().endsWith(".gif"));
