@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 public final class Constants {
     // Default Settings
     public static final String DEFAULT_DOWNLOAD_ROOT_PATH = "src/main/resources/storage";
+    public static final String DEFAULT_TEST_DOWNLOAD_ROOT_PATH = "src/main/resources/testStorage";
     public static final String DEFAULT_FILES_ORDER = "up";
     public static final String DEFAULT_FILES_SORT = "name";
     public static final String DEFAULT_FILES_TYPE = "All";
@@ -20,7 +21,6 @@ public final class Constants {
 
     // Redis Key
     public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
-    public static final String KEY_CHUNK_HASHMAP_1 = "CHUNK_HASHMAP_1";
 
     // Task Status
     public static final String TASK_STATUS_DOWNLOADING = "downloading";

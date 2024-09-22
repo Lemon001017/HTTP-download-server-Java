@@ -1,25 +1,35 @@
 package com.example.HttpDownloadServer;
 
 import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.entity.File;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.mapper.TaskMapper;
+import com.example.HttpDownloadServer.param.FileParams;
 import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.service.SettingsService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.utils.Result;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.creation.SuspendMethod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
 public class HttpDownloadServerAPITests {
@@ -141,5 +151,56 @@ public class HttpDownloadServerAPITests {
 
     @Test
     public void testGetFileList() {
+        Settings settings = new Settings(1, Constants.DEFAULT_TEST_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+        fileService.init(settings);
+        // test the default empty query
+        FileParams fileParams = new FileParams("", "", "");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result = fileService.fetchFileList(fileParams);
+        assertEquals(result.getData().size(), 13);
+        assertTrue(result.getData().getFirst().getName().compareTo(result.getData().getLast().getName()) < 0);
+
+        // test Type=All and Sort=name and Order=up
+        FileParams fileParams1 = new FileParams("All", "name", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result1 = fileService.fetchFileList(fileParams1);
+        assertEquals(result1.getData().size(), 13);
+        assertTrue(result1.getData().getFirst().getName().compareTo(result1.getData().getLast().getName()) < 0);
+
+        // test Type=Video and Sort=size and Order=down
+        FileParams fileParams2 = new FileParams("Video", "size", "down");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result2 = fileService.fetchFileList(fileParams2);
+        assertTrue(result2.getData().getFirst().getSize() > result2.getData().getLast().getSize());
+        result2.getData().forEach(file -> {
+            assertTrue(file.getName().endsWith(".mp4") || file.getName().endsWith(".mov"));
+        });
+
+        // test Type=Photo and Sort=gmtCreated and Order=up
+        FileParams fileParams3 = new FileParams("Photo", "gmtCreated", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result3 = fileService.fetchFileList(fileParams3);
+        System.out.println(result3.getData().getFirst().getGmtModified().getTime());
+        System.out.println(result3.getData().getLast().getGmtModified().getTime());
+        assertTrue(result3.getData().getFirst().getGmtModified().getTime()<result3.getData().getLast().getGmtModified().getTime());
+        result3.getData().forEach(file -> {
+            assertTrue(file.getName().endsWith(".png") || file.getName().endsWith(".jpg")|| file.getName().endsWith(".gif"));
+        });
+
+        // test Type=Archive
+        FileParams fileParams4 = new FileParams("Archive", "gmtCreated", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result4 = fileService.fetchFileList(fileParams4);
+        result4.getData().forEach(file -> {
+            assertTrue(file.getName().endsWith(".zip")|| file.getName().endsWith(".rar")|| file.getName().endsWith(".tar"));
+        });
+
+        // test Type=Document
+        FileParams fileParams5 = new FileParams("Document", "name", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result5 = fileService.fetchFileList(fileParams5);
+        result5.getData().forEach(file -> {
+            assertTrue(file.getName().endsWith(".pptx")|| file.getName().endsWith(".docx")|| file.getName().endsWith(".xlsx"));
+        });
+
+        // test for illegal parameters
+        FileParams fileParams6 = new FileParams("hello", "world", "!");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result6 = fileService.fetchFileList(fileParams6);
+        assertEquals(result6.getData().size(), 13);
+        assertTrue(result6.getData().getFirst().getName().compareTo(result6.getData().getLast().getName()) < 0);
     }
 }

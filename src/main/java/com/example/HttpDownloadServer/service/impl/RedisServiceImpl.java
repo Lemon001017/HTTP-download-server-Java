@@ -11,10 +11,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisServiceImpl implements RedisService {
     private final RedisTemplate<String,String> redisTemplate;
+    private final Random random=new Random();
     @Autowired
     public RedisServiceImpl(RedisTemplate<String,String> redisTemplate){
         this.redisTemplate=redisTemplate;
@@ -27,6 +29,7 @@ public class RedisServiceImpl implements RedisService {
             scoreboard.put(String.valueOf(i),false);
         }
         hashOps.put(Constants.KEY_CHUNK_HASHMAP,taskId, JSON.toJSONString(scoreboard));
+        redisTemplate.expire(Constants.KEY_CHUNK_HASHMAP, 60+random.nextInt(20), TimeUnit.MINUTES);
     }
     @Override
     public void updateScoreboard(String taskId, int chunkId) {
