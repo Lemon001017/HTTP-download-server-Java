@@ -5,6 +5,7 @@ import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.mapper.TaskMapper;
 import com.example.HttpDownloadServer.service.RedisService;
+import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.utils.Result;
 import com.example.HttpDownloadServer.utils.UUIDUtils;
@@ -37,6 +38,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private SseService sseService;
 
     private static final Logger log = LoggerFactory.getLogger(TaskServiceImpl.class);
 
@@ -128,6 +132,8 @@ public class TaskServiceImpl implements TaskService {
                         task.setSpeed(speed);
                         task.setProgress(progress);
                         task.setRemainingTime(remainingTime);
+
+                        sseService.send(task.getId(), task);
                         taskMapper.updateById(task);
                         lastMessageTime = System.currentTimeMillis();
                     }
@@ -250,6 +256,9 @@ public class TaskServiceImpl implements TaskService {
     public Result<List<String>> delete(List<String> ids) {
         Result<List<String>> result = new Result<>();
         taskMapper.deleteByIds(ids);
+        for (String id : ids) {
+            redisService.deleteScoreboard(id);
+        }
         result.setData(ids);
         result.setCode(Constants.HTTP_STATUS_OK);
         return result;
