@@ -70,9 +70,18 @@ const selectedOptions = ref([])
                     </el-select>
                 </el-col>
                 <div class="flex justify-end w-[95%]">
-                    <el-button type="primary" size="small">重新下载</el-button>
-                    <el-button type="success" size="small">继续下载</el-button>
-                    <el-button type="danger" size="small">删除任务</el-button>
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                        <img src="../assets/shuaxin.svg" alt="Button Image"
+                            class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
+                    </button>
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                        <img src="../assets/kaishi.svg" alt="Button Image"
+                            class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
+                    </button>
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                        <img src="../assets/shanchu.svg" alt="Button Image"
+                            class="h-[34px] m-[6px]  hover:opacity-75 active:scale-75 transition-all ">
+                    </button>
                 </div>
                 <div class="w-[95%] ml-[25px]">
                     <div v-for="(item, index) in data" :key="index" class="border-2 m-4 rounded-xl">

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import SideBar from '../components/SideBar.vue'
 import backend from '../backend'
 
@@ -13,26 +13,26 @@ const options = ref([
   { value: 'Document', label: 'Document(*.pptx;*.docx;*.xlsx)' }
 ])
 
-const tableData = [
-  {
-    "name": "1-10.mp4",
-    "path": "\\storage\\1-10.mp4",
-    "size": 32003339,
-    "gmtModified": "2024-09-18T14:52:31.026+00:00"
-  },
-  {
-    "name": "PixPin_2024-08-22_19-11-22.png",
-    "path": "\\storage\\PixPin_2024-08-22_19-11-22.png",
-    "size": 15997,
-    "gmtModified": "2024-08-22T11:11:23.778+00:00"
-  },
-  {
-    "name": "b_54f53e1c231f2713ed264effe7a1b68b.jpg",
-    "path": "\\storage\\b_54f53e1c231f2713ed264effe7a1b68b.jpg",
-    "size": 41590,
-    "gmtModified": "2024-08-22T07:53:28.126+00:00"
-  }
-]
+// const tableData = [
+//   {
+//     "name": "1-10.mp4",
+//     "path": "\\storage\\1-10.mp4",
+//     "size": 32003339,
+//     "gmtModified": "2024-09-18T14:52:31.026+00:00"
+//   },
+//   {
+//     "name": "PixPin_2024-08-22_19-11-22.png",
+//     "path": "\\storage\\PixPin_2024-08-22_19-11-22.png",
+//     "size": 15997,
+//     "gmtModified": "2024-08-22T11:11:23.778+00:00"
+//   },
+//   {
+//     "name": "b_54f53e1c231f2713ed264effe7a1b68b.jpg",
+//     "path": "\\storage\\b_54f53e1c231f2713ed264effe7a1b68b.jpg",
+//     "size": 41590,
+//     "gmtModified": "2024-08-22T07:53:28.126+00:00"
+//   }
+// ]
 
 const sortParams = ref({})
 const handleSortChange = (column) => {
@@ -45,19 +45,33 @@ const handleSortChange = (column) => {
       order: order === 'ascending' ? 'up' : 'down'
     };
   }
+  saveSetting(value.value)
 }
 
+const data = ref([])
+const formattedTableData = ref([]);
+const formatDate = (isoTimestamp) => {
+  const date = new Date(isoTimestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+
 async function saveSetting(val) {
-  const data = await backend.post('/api/file/list', {
+  data.value = await backend.post('/api/file/list', {
     type: val,
     sort: sortParams?.value.prop,
     order: sortParams?.value.order,
   })
-  tableData.forEach(item => {
-    if(item.size<1024) item.size = item.size + 'B'
-    if(item.size<1024*1024) item.size = (item.size/1024).toFixed(2) + 'KB'
-    else item.size = (item.size/(1024*1024)).toFixed(2) + 'MB'
+  data.value.data.forEach(item => {
+    if (item.size < 1024) item.size = item.size + 'B'
+    if (item.size < 1024 * 1024) item.size = (item.size / 1024).toFixed(2) + 'KB'
+    else item.size = (item.size / (1024 * 1024)).toFixed(2) + 'MB'
   })
+
+  console.log(data.value)
 }
 
 onMounted(() => {
@@ -76,7 +90,7 @@ onMounted(() => {
       <div class="flex-1 mt-[20px]">
         <el-row justify="space-between">
           <el-col :span="4">
-            /storage
+            \storage
           </el-col>
           <el-col :span="12">
             <el-select v-model="value" placeholder="Select" @change="saveSetting" class="w-[240px]">
@@ -85,11 +99,15 @@ onMounted(() => {
           </el-col>
         </el-row>
         <div style="margin: 20px;">
-          <el-table :data="tableData" @sort-change="handleSortChange">
-            <el-table-column prop="name" label="File name" sortable />
+          <el-table :data="data.data" @sort-change="handleSortChange">
+            <el-table-column prop="name" label="File name" sortable="custom" />
             <el-table-column prop="path" label="Path" />
-            <el-table-column prop="size" width="150" sortable label="Size" />
-            <el-table-column prop="gmtModified" width="200" sortable label="Create time" />
+            <el-table-column prop="size" width="150" sortable="custom" label="Size" />
+            <el-table-column prop="gmtCreated" width="200" sortable="custom" label="Create time">
+              <template #default="{ row }">
+                {{ formatDate(row.gmtModified) }}
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </div>
