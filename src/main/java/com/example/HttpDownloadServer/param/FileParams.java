@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class FileParams {
-    // File type
+    // File type (All/Video/Archive/Document/Photo)
     private String type;
     // Sort type (name/size/gmtCreated)
     private String sort;

@@ -9,7 +9,7 @@ import org.springframework.web.filter.CorsFilter;
 
 /**
  * globalCrossDomainConfiguration
- **/
+ */
 @Configuration
 public class CorsConfig {
     @Bean

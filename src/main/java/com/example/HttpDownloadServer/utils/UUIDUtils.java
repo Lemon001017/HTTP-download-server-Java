@@ -1,8 +1,6 @@
 package com.example.HttpDownloadServer.utils;
 
 import java.util.Random;
-import java.util.random.RandomGenerator;
-import java.util.random.RandomGeneratorFactory;
 
 public class UUIDUtils {
     public static String generateId() {

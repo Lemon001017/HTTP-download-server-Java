@@ -4,9 +4,12 @@ import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.mapper.TaskMapper;
+import com.example.HttpDownloadServer.service.RedisService;
+import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.utils.Result;
 import com.example.HttpDownloadServer.utils.UUIDUtils;
+import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +37,12 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private TaskMapper taskMapper;
 
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private SseService sseService;
+
     private static final Logger log = LoggerFactory.getLogger(TaskServiceImpl.class);
 
     private static final Object lock = new Object();
@@ -41,7 +50,7 @@ public class TaskServiceImpl implements TaskService {
     private final ConcurrentHashMap<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
 
     private final ThreadPoolExecutor downloadExecutor = new ThreadPoolExecutor(4, 8,
-            60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(100));
+            60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
 
     @Override
     public Result<String> submit(String url) {
@@ -54,6 +63,7 @@ public class TaskServiceImpl implements TaskService {
         CompletableFuture.runAsync(() -> {
             try {
                 Task task = initOneTask(taskId, url);
+                redisService.initializeScoreboard(taskId, task.getChunkNum());
                 processDownload(task);
             } catch (IOException | URISyntaxException e) {
                 log.error("Submit task error id:{} err:{}", taskId, e.getMessage(), e);
@@ -64,23 +74,30 @@ public class TaskServiceImpl implements TaskService {
         return result;
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private void processDownload(Task task) throws IOException, URISyntaxException {
         long startTime = System.currentTimeMillis();
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
         File outputFile = new File(task.getSavePath());
         List<Future<?>> futures = new ArrayList<>();
+        List<Integer> scoreboard = redisService.getScoreboard(task.getId());
+        @SuppressWarnings("UnstableApiUsage") RateLimiter limiter = RateLimiter.create(settingsMapper.selectOne(null).getMaxDownloadSpeed() * 1000 * 1000);
 
         // Submit the fragment for download
         for (int i = 0; i < task.getChunkNum(); i++) {
             int start = i * task.getChunkSize();
             int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
-            Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime));
-            futures.add(future);
+            int chunkIndex = i;
+            if (scoreboard.contains(chunkIndex)) {
+                Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime, chunkIndex, limiter));
+                futures.add(future);
+            }
         }
         chunkFutures.put(task.getId(), futures);
     }
 
-    private void downloadChunk(Task task, int start, int end, File file, long startTime) {
+    @SuppressWarnings("UnstableApiUsage")
+    private void downloadChunk(Task task, int start, int end, File file, long startTime, int index, RateLimiter limiter) {
         try {
             HttpURLConnection conn = getConn(task.getUrl());
             conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
@@ -99,13 +116,13 @@ public class TaskServiceImpl implements TaskService {
             while ((bytesRead = in.read(buffer)) != -1) {
                 // Check whether the current thread is interrupted
                 if (Thread.currentThread().isInterrupted()) {
-                    log.info("Download paused for task id:{} url:{}", task.getId(), task.getUrl());
+                    log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().threadId());
                     in.close();
                     raf.close();
                     conn.disconnect();
                     return;
                 }
-
+                limiter.acquire(bytesRead);
                 raf.write(buffer, 0, bytesRead);
                 synchronized (lock) {
                     task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
@@ -119,14 +136,19 @@ public class TaskServiceImpl implements TaskService {
                         task.setSpeed(speed);
                         task.setProgress(progress);
                         task.setRemainingTime(remainingTime);
+
+                        sseService.send(task.getId(), task);
                         taskMapper.updateById(task);
                         lastMessageTime = System.currentTimeMillis();
                     }
                 }
             }
 
-            if (task.getTotalDownloaded() == task.getSize()) {
+            redisService.updateScoreboard(task.getId(), index);
+
+            if (task.getTotalDownloaded() == task.getSize() || redisService.getScoreboard(task.getId()).isEmpty()) {
                 log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());
+                redisService.deleteScoreboard(task.getId());
                 task.setProgress(100);
                 task.setRemainingTime(0);
                 task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
@@ -141,6 +163,117 @@ public class TaskServiceImpl implements TaskService {
             task.setStatus(Constants.TASK_STATUS_FAILED);
             taskMapper.updateById(task);
         }
+    }
+
+    @Override
+    public Result<List<String>> pause(List<String> ids) {
+        Result<List<String>> result = new Result<>();
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADING)) {
+                task.setStatus(Constants.TASK_STATUS_CANCELED);
+                taskMapper.updateById(task);
+
+                List<Future<?>> futures = chunkFutures.get(task.getId());
+                if (futures != null) {
+                    for (Future<?> future : futures) {
+                        future.cancel(true);
+                    }
+                } else {
+                    log.error("The task futures is null id:{}", task.getId());
+                }
+            } else {
+                log.error("The task status is not downloading id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
+                result.setMessage("Task status is not downloading");
+                return result;
+            }
+        }
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
+    }
+
+    @Override
+    public Result<List<String>> resume(List<String> ids) {
+        Result<List<String>> result = new Result<>();
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_CANCELED)) {
+                task.setStatus(Constants.TASK_STATUS_PENDING);
+                taskMapper.updateById(task);
+
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        processDownload(task);
+                    } catch (IOException | URISyntaxException e) {
+                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
+                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                        result.setMessage("Resume task failed id:{}" + task.getId());
+                    }
+                });
+            } else {
+                log.error("The task status is not canceled id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
+                result.setMessage("Resume task failed id:{}" + task.getId());
+                return result;
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public Result<List<String>> restart(List<String> ids) {
+        Result<List<String>> result = new Result<>();
+        List<Task> tasks = taskMapper.selectBatchIds(ids);
+        for (Task task : tasks) {
+            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADED)) {
+                task.setStatus(Constants.TASK_STATUS_PENDING);
+                task.setTotalDownloaded(0);
+                task.setProgress(0);
+                task.setSpeed(0);
+                taskMapper.updateById(task);
+                redisService.initializeScoreboard(task.getId(), task.getChunkNum());
+
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        processDownload(task);
+                    } catch (IOException | URISyntaxException e) {
+                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
+                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                        result.setMessage("Restart task failed id:{}" + task.getId());
+                    }
+                });
+            } else {
+                log.error("The task status is not downloaded id:{} status:{}", task.getId(), task.getStatus());
+                result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+                result.setMessage("Restart task failed id:{}" + task.getId());
+                return result;
+            }
+        }
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
+    }
+
+    @Override
+    public Result<List<String>> delete(List<String> ids) {
+        Result<List<String>> result = new Result<>();
+        taskMapper.deleteByIds(ids);
+        for (String id : ids) {
+            redisService.deleteScoreboard(id);
+        }
+        result.setData(ids);
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
+    }
+
+    @Override
+    public Result<List<Task>> getTaskList(String status) {
+        Result<List<Task>> result = new Result<>();
+        result.setData(taskMapper.getTasksByStatus(status));
+        result.setCode(Constants.HTTP_STATUS_OK);
+        return result;
     }
 
     private int getChunkSize(long fileSize) {
@@ -160,7 +293,7 @@ public class TaskServiceImpl implements TaskService {
 
         HttpURLConnection conn = getConn(urlString);
 
-        long fileSize = conn.getContentLengthLong();
+        long fileSize = conn.getContentLength();
         int chunkSize = getChunkSize(fileSize);
         int chunkNums = (int) ((fileSize + chunkSize - 1) / chunkSize);
 
@@ -213,107 +346,5 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return fileName;
-    }
-
-    @Override
-    public Result<List<String>> pause(List<String> ids) {
-        Result<List<String>> result = new Result<>();
-        List<Task> tasks = taskMapper.selectBatchIds(ids);
-        for (Task task : tasks) {
-            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADING)) {
-                task.setStatus(Constants.TASK_STATUS_CANCELED);
-                taskMapper.updateById(task);
-                for (Future<?> future : chunkFutures.get(task.getId())) {
-                    future.cancel(true);
-                }
-            } else {
-                log.error("The task status is not downloading id:{} status:{}", task.getId(), task.getStatus());
-                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
-                result.setMessage("Task status is not downloading");
-                return result;
-            }
-        }
-        result.setData(ids);
-        result.setCode(Constants.HTTP_STATUS_OK);
-        return result;
-    }
-
-    @Override
-    public Result<List<String>> resume(List<String> ids) {
-        Result<List<String>> result = new Result<>();
-        List<Task> tasks = taskMapper.selectBatchIds(ids);
-        for (Task task : tasks) {
-            if (task.getStatus().equals(Constants.TASK_STATUS_CANCELED)) {
-                task.setStatus(Constants.TASK_STATUS_PENDING);
-                task.setSpeed(0);
-                taskMapper.updateById(task);
-
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        processDownload(task);
-                    } catch (IOException | URISyntaxException e) {
-                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
-                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                        result.setMessage("Resume task failed id:{}" + task.getId());
-                    }
-                });
-            } else {
-                log.error("The task status is not canceled id:{} status:{}", task.getId(), task.getStatus());
-                result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
-                result.setMessage("Resume task failed id:{}" + task.getId());
-                return result;
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public Result<List<String>> restart(List<String> ids) {
-        Result<List<String>> result = new Result<>();
-        List<Task> tasks = taskMapper.selectBatchIds(ids);
-        for (Task task : tasks) {
-            if (task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADED)) {
-                task.setStatus(Constants.TASK_STATUS_PENDING);
-                task.setTotalDownloaded(0);
-                task.setProgress(0);
-                task.setSpeed(0);
-                taskMapper.updateById(task);
-
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        processDownload(task);
-                    } catch (IOException | URISyntaxException e) {
-                        log.error("Submit task error id:{} err:{}", task.getId(), e.getMessage(), e);
-                        result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                        result.setMessage("Restart task failed id:{}" + task.getId());
-                    }
-                });
-            } else {
-                log.error("The task status is not downloaded id:{} status:{}", task.getId(), task.getStatus());
-                result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
-                result.setMessage("Restart task failed id:{}" + task.getId());
-                return result;
-            }
-        }
-        result.setData(ids);
-        result.setCode(Constants.HTTP_STATUS_OK);
-        return result;
-    }
-
-    @Override
-    public Result<List<String>> delete(List<String> ids) {
-        Result<List<String>> result = new Result<>();
-        taskMapper.deleteByIds(ids);
-        result.setData(ids);
-        result.setCode(Constants.HTTP_STATUS_OK);
-        return result;
-    }
-
-    @Override
-    public Result<List<Task>> getTaskList(String status) {
-        Result<List<Task>> result = new Result<>();
-        result.setData(taskMapper.getTasksByStatus(status));
-        result.setCode(Constants.HTTP_STATUS_OK);
-        return result;
     }
 }

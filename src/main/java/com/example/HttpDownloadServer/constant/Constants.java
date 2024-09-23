@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 public final class Constants {
     // Default Settings
     public static final String DEFAULT_DOWNLOAD_ROOT_PATH = "src/main/resources/storage";
+    public static final String DEFAULT_TEST_DOWNLOAD_ROOT_PATH = "src/main/resources/testStorage";
     public static final String DEFAULT_FILES_ORDER = "up";
     public static final String DEFAULT_FILES_SORT = "name";
     public static final String DEFAULT_FILES_TYPE = "All";
@@ -29,7 +30,6 @@ public final class Constants {
     public static final String TASK_STATUS_FAILED = "failed";
 
     // HTTP Status
-    public static final HTTPStatusParam DOWNLOAD_TIMEOUT = new HTTPStatusParam(504, HttpStatus.GATEWAY_TIMEOUT, "download time out");
     public static final HTTPStatusParam STORAGE_INIT_ERROR = new HTTPStatusParam(510, HttpStatus.NOT_EXTENDED, "Storage initialization failed");
     public static final HTTPStatusParam STORAGE_READ_ERROR = new HTTPStatusParam(500, HttpStatus.INTERNAL_SERVER_ERROR, "Resource read failed");
 
@@ -45,5 +45,5 @@ public final class Constants {
     // Task Error
     public static final String ERR_SUBMIT_TASK = "Failed to submit task";
 
-    public static final long MessageInterval = 300;
+    public static final long MessageInterval = 800;
 }
