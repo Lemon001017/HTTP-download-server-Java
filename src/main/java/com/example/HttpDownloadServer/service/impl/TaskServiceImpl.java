@@ -9,6 +9,7 @@ import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.utils.Result;
 import com.example.HttpDownloadServer.utils.UUIDUtils;
+import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,12 +74,14 @@ public class TaskServiceImpl implements TaskService {
         return result;
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private void processDownload(Task task) throws IOException, URISyntaxException {
         long startTime = System.currentTimeMillis();
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
         File outputFile = new File(task.getSavePath());
         List<Future<?>> futures = new ArrayList<>();
         List<Integer> scoreboard = redisService.getScoreboard(task.getId());
+        @SuppressWarnings("UnstableApiUsage") RateLimiter limiter = RateLimiter.create(settingsMapper.selectOne(null).getMaxDownloadSpeed() * 1000 * 1000);
 
         // Submit the fragment for download
         for (int i = 0; i < task.getChunkNum(); i++) {
@@ -86,14 +89,15 @@ public class TaskServiceImpl implements TaskService {
             int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
             int chunkIndex = i;
             if (scoreboard.contains(chunkIndex)) {
-                Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime, chunkIndex));
+                Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime, chunkIndex, limiter));
                 futures.add(future);
             }
         }
         chunkFutures.put(task.getId(), futures);
     }
 
-    private void downloadChunk(Task task, int start, int end, File file, long startTime, int index) {
+    @SuppressWarnings("UnstableApiUsage")
+    private void downloadChunk(Task task, int start, int end, File file, long startTime, int index, RateLimiter limiter) {
         try {
             HttpURLConnection conn = getConn(task.getUrl());
             conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
@@ -118,7 +122,7 @@ public class TaskServiceImpl implements TaskService {
                     conn.disconnect();
                     return;
                 }
-
+                limiter.acquire(bytesRead);
                 raf.write(buffer, 0, bytesRead);
                 synchronized (lock) {
                     task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
