@@ -56,8 +56,8 @@ async function taskSubmit() {
         body: formData,
         
     })
-    const data = await resp.json();  // 正确解析 JSON 数据
-    const taskId = data.data;  // 假设 data 包含一个名为 "data" 的字段
+    const data = await resp.json();  
+    const taskId = data.data;  
 
     const eventUrl = `${BASE_URL}/api/event/${taskId}`;
     transfersSource = new EventSource(eventUrl);
@@ -67,7 +67,6 @@ async function taskSubmit() {
         console.log(eventData);
     });
 
-    // 错误处理
     transfersSource.onerror = (error) => {
         console.error('Error in SSE:', error);
         transfersSource.close();
@@ -79,12 +78,16 @@ async function getTaskList() {
     formData.append('status', JSON.stringify(optionsValue.value));
 
     const resp = await fetch(BASE_URL + "/api/task/list", {
-        method: "GET",
+        method: "POST",
         // headers: {
         //     "Content-Type": "application/json"
         // },
         body: formData
     })
+    // await backend.post('/api/task/list', {
+    //     status:optionsValue.value,
+    // }
+    // )
 }
 const selectedOptions = ref([])
 
