@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import SideBar from '../components/SideBar.vue'
 import { ElMessage } from 'element-plus';
@@ -91,6 +91,9 @@ async function getTaskList() {
 }
 const selectedOptions = ref([])
 
+onMounted(() => {
+    getTaskList()
+})
 
 </script>
 <template>
