@@ -39,6 +39,7 @@ public class RedisServiceImpl implements RedisService {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
         ConcurrentHashMap<String, Boolean> scoreboard = JSON.parseObject(hashOps.get(Constants.KEY_CHUNK_HASHMAP, taskId), new TypeReference<>() {
         });
+
         if (scoreboard != null) {
             scoreboard.put(String.valueOf(chunkId), true);
             redisTemplate.opsForHash().put(Constants.KEY_CHUNK_HASHMAP, taskId, JSON.toJSONString(scoreboard));

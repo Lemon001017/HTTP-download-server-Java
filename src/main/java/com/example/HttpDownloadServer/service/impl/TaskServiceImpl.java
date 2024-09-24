@@ -81,7 +81,7 @@ public class TaskServiceImpl implements TaskService {
         File outputFile = new File(task.getSavePath());
         List<Future<?>> futures = new ArrayList<>();
         List<Integer> scoreboard = redisService.getScoreboard(task.getId());
-        @SuppressWarnings("UnstableApiUsage") RateLimiter limiter = RateLimiter.create(settingsMapper.selectOne(null).getMaxDownloadSpeed() * 1000 * 1000);
+        RateLimiter limiter = RateLimiter.create(settingsMapper.selectOne(null).getMaxDownloadSpeed() * 1000 * 1000);
 
         // Submit the fragment for download
         for (int i = 0; i < task.getChunkNum(); i++) {
@@ -271,7 +271,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Result<List<Task>> getTaskList(String status) {
         Result<List<Task>> result = new Result<>();
-        result.setData(taskMapper.getTasksByStatus(status));
+        if (status.equals(Constants.Task_Status_ALL)) {
+            result.setData(taskMapper.selectList(null));
+        } else {
+            result.setData(taskMapper.getTasksByStatus(status));
+        }
         result.setCode(Constants.HTTP_STATUS_OK);
         return result;
     }

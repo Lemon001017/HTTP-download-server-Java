@@ -23,6 +23,7 @@ public final class Constants {
     public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
 
     // Task Status
+    public static final String Task_Status_ALL = "all";
     public static final String TASK_STATUS_DOWNLOADING = "downloading";
     public static final String TASK_STATUS_DOWNLOADED = "downloaded";
     public static final String TASK_STATUS_PENDING = "pending";

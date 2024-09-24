@@ -78,6 +78,9 @@ public class HttpDownloadServerAPITests {
         assertEquals(1, result.size());
         assertEquals(Constants.TASK_STATUS_DOWNLOADED, result.getFirst().getStatus());
         assertEquals("2", result.getFirst().getId());
+
+        result = taskService.getTaskList(Constants.Task_Status_ALL).getData();
+        assertEquals(2, result.size());
         taskMapper.deleteByIds(List.of("1", "2"));
     }
 
