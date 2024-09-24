@@ -69,7 +69,7 @@ public class TaskController {
     /**
      * Get task list
      */
-    @GetMapping("/list")
+    @PostMapping("/list")
     public Result<List<Task>> getTaskList(@RequestParam String status) {
         log.info("Get task list with status:{}", status);
         return taskService.getTaskList(status);
