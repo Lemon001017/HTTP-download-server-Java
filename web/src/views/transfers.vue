@@ -5,11 +5,14 @@ import SideBar from '../components/SideBar.vue'
 import { ElMessage } from 'element-plus';
 
 import backend from '../backend'
+import { id } from 'element-plus/es/locale/index.mjs';
+
+const BASE_URL = 'http://localhost:8080';
 
 const mouseleave = false
 
 const urlInput = ref('')
-const value = ref('all')
+const optionsValue = ref('all')
 const options = ref([
     { value: 'all', label: 'All' },
     { value: 'downloaded', label: 'Downloaded' },
@@ -20,12 +23,12 @@ const options = ref([
 ])
 
 const data = [
-    { value: 'all', label: 'All' },
-    { value: 'downloaded', label: 'Downloaded' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'canceled', label: 'Canceled' },
-    { value: 'downloading', label: 'Downloading' },
-    { value: 'failed', label: 'Failed' }
+    { id: 1, label: 'Task 1' ,value: 'Value1'},
+    { id: 2, label: 'Task 2' ,value: 'Value2'},
+    { id: 3, label: 'Task 3' ,value: 'Value3'},
+    { id: 4, label: 'Task 4' ,value: 'Value4'},
+    { id: 5, label: 'Task 5' ,value: 'Value5'},
+    { id: 6, label: 'Task 6' ,value: 'Value6'},
 ]
 
 const showErrorMessage = () => {
@@ -39,16 +42,53 @@ const showErrorMessage = () => {
 
 defineExpose({ showErrorMessage })
 
-const taskValue = ref([])
-async function taskSubmit() {
-    taskValue.value = await backend.post('/task/submit', {
-        url: urlInput
-    })
+let transfersSource = null
 
+async function taskSubmit() {
+    console.log(selectedOptions.value)
+
+    
+    const formData = new FormData();
+    formData.append('url', urlInput.value);
+
+    const resp = await fetch(BASE_URL + "/api/task/submit", {
+        method: "POST",
+        body: formData,
+        
+    })
+    const data = await resp.json();  // 正确解析 JSON 数据
+    const taskId = data.data;  // 假设 data 包含一个名为 "data" 的字段
+
+    const eventUrl = `${BASE_URL}/api/event/${taskId}`;
+    transfersSource = new EventSource(eventUrl);
+
+    transfersSource.addEventListener('message', (event) => {
+        const eventData = JSON.parse(event.data);
+        console.log(eventData);
+    });
+
+    // 错误处理
+    transfersSource.onerror = (error) => {
+        console.error('Error in SSE:', error);
+        transfersSource.close();
+    };
 }
 
+async function getTaskList() {
+    const formData = new FormData();
+    formData.append('status', JSON.stringify(optionsValue.value));
 
+    const resp = await fetch(BASE_URL + "/api/task/list", {
+        method: "GET",
+        // headers: {
+        //     "Content-Type": "application/json"
+        // },
+        body: formData
+    })
+}
 const selectedOptions = ref([])
+
+
 </script>
 <template>
     <div>
@@ -61,11 +101,11 @@ const selectedOptions = ref([])
                 <el-col class="flex justify-center align-center w-[100%]">
                     <div class="flex justify-center align-center w-[100%] mb-4 mx-10">
                         <el-input v-model="urlInput" size="large" class="flex-1" placeholder="Please input" />
-                        <el-button type="primary" round>Submit</el-button>
+                        <el-button type="primary" round @click="taskSubmit">Submit</el-button>
                     </div>
                 </el-col>
                 <el-col class="ml-[40px] mb-4">
-                    <el-select v-model="value" placeholder="Select" style="width: 240px">
+                    <el-select v-model="optionsValue" placeholder="Select" class="w-[240px]" @change="getTaskList">
                         <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-col>
@@ -86,7 +126,7 @@ const selectedOptions = ref([])
                 <div class="w-[95%] ml-[25px]">
                     <div v-for="(item, index) in data" :key="index" class="border-2 m-4 rounded-xl">
                         <div class="mx-2 my-4" style="display: flex;">
-                            <input type="checkbox" :id="`option-${index}`" :value="item.value" v-model="selectedOptions"
+                            <input type="checkbox" :id="`option-${index}`" :value="item.id" v-model="selectedOptions"
                                 class="p-2 w-[18px] mx-4">
                             <div class="m-4 flex flex-col flex-1 ">
                                 <div class="flex justify-between ">
