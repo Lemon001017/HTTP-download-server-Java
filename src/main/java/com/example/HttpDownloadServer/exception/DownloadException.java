@@ -1,6 +1,7 @@
 package com.example.HttpDownloadServer.exception;
 
 import com.example.HttpDownloadServer.param.HTTPStatusParam;
+import org.springframework.retry.ExhaustedRetryException;
 import org.springframework.web.server.ResponseStatusException;
 
 /**

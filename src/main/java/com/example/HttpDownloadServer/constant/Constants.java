@@ -3,7 +3,10 @@ package com.example.HttpDownloadServer.constant;
 import com.example.HttpDownloadServer.param.HTTPStatusParam;
 import org.springframework.http.HttpStatus;
 
+import java.util.Random;
+
 public final class Constants {
+
     // Default Settings
     public static final String DEFAULT_DOWNLOAD_ROOT_PATH = "src/main/resources/storage";
     public static final String DEFAULT_TEST_DOWNLOAD_ROOT_PATH = "src/main/resources/testStorage";
@@ -21,6 +24,12 @@ public final class Constants {
 
     // Redis Key
     public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
+    public static final String KEY_WORK_QUEUE = "WORK_QUEUE";
+
+
+    // Spring Retry
+    public static final int DEFAULT_MAX_ATTEMPTS= 120;
+    public static final long DEFAULT_BACKOFF_MILLIS = 1000;
 
     // Task Status
     public static final String Task_Status_ALL = "all";
@@ -33,7 +42,7 @@ public final class Constants {
     // HTTP Status
     public static final HTTPStatusParam STORAGE_INIT_ERROR = new HTTPStatusParam(510, HttpStatus.NOT_EXTENDED, "Storage initialization failed");
     public static final HTTPStatusParam STORAGE_READ_ERROR = new HTTPStatusParam(500, HttpStatus.INTERNAL_SERVER_ERROR, "Resource read failed");
-
+    public static final HTTPStatusParam TASK_QUEUE_FULL = new HTTPStatusParam(501, HttpStatus.NOT_IMPLEMENTED, "task queue full");
     // HTTP Code
     public static final String HTTP_STATUS_OK = "200";
     public static final String HTTP_STATUS_BAD_REQUEST = "400";
