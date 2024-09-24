@@ -3,10 +3,23 @@ package com.example.HttpDownloadServer.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.entity.Settings;
+import com.example.HttpDownloadServer.entity.Task;
+import com.example.HttpDownloadServer.exception.DownloadException;
+import com.example.HttpDownloadServer.mapper.SettingsMapper;
+import com.example.HttpDownloadServer.mapper.TaskMapper;
 import com.example.HttpDownloadServer.service.RedisService;
+import org.apache.ibatis.annotations.Param;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.retry.ExhaustedRetryException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -16,11 +29,18 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class RedisServiceImpl implements RedisService {
     private final RedisTemplate<String, String> redisTemplate;
+    private final SettingsMapper settingsMapper;
+    private final TaskMapper taskMapper;
     private final Random random = new Random();
+    private static final Logger LOG = LoggerFactory.getLogger(RedisServiceImpl.class);
+
+
 
     @Autowired
-    public RedisServiceImpl(RedisTemplate<String, String> redisTemplate) {
+    public RedisServiceImpl(TaskMapper taskMapper,SettingsMapper settingsMapper,RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
+        this.settingsMapper=settingsMapper;
+        this.taskMapper=taskMapper;
     }
 
     @Override
@@ -68,5 +88,34 @@ public class RedisServiceImpl implements RedisService {
         if (hashOps.hasKey(Constants.KEY_CHUNK_HASHMAP, taskId)) {
             redisTemplate.opsForHash().delete(Constants.KEY_CHUNK_HASHMAP, taskId);
         }
+    }
+    @Override
+    @Retryable(retryFor = {DownloadException.class},
+            maxAttempts = Constants.DEFAULT_MAX_ATTEMPTS,
+            backoff = @Backoff(delay = Constants.DEFAULT_BACKOFF_MILLIS))
+    public boolean addTaskQueue(Task task){
+        Settings settings= settingsMapper.selectById(1);
+            ListOperations<String, String> listOperations= redisTemplate.opsForList();
+            Long beforeSize=listOperations.size(Constants.KEY_WORK_QUEUE);
+                if (beforeSize >= settings.getMaxTasks()) {
+                    LOG.info("work queue full");
+                    throw new DownloadException(Constants.TASK_QUEUE_FULL);
+                }
+
+            Long afterSize=listOperations.leftPush(Constants.KEY_WORK_QUEUE, JSON.toJSONString(task));
+            return beforeSize<afterSize;
+    }
+
+    @Recover
+    public boolean recover(DownloadException e, Task task) {
+        task.setStatus(Constants.TASK_STATUS_CANCELED);
+        taskMapper.updateById(task);
+        LOG.info("Cancel the task download, taskId: {} ",task.getId());
+        return true;
+    }
+    @Override
+    public Boolean deleteTaskQueue(Task task){
+        ListOperations<String, String> listOperations= redisTemplate.opsForList();
+        return listOperations.remove(Constants.KEY_WORK_QUEUE, 1, JSON.toJSONString(task))>0L;
     }
 }
