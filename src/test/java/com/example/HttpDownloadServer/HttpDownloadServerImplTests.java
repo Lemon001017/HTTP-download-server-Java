@@ -83,12 +83,10 @@ public class HttpDownloadServerImplTests {
         Assertions.assertTrue(redisService.addTaskQueue(task2));
         Assertions.assertTrue(redisService.addTaskQueue(task3));
         Assertions.assertTrue(redisService.addTaskQueue(task4));
-        Assertions.assertDoesNotThrow(()->redisService.addTaskQueue(task5));
-        Thread.sleep(2000);
+        Assertions.assertFalse(redisService.addTaskQueue(task5));
         Assertions.assertEquals(Constants.TASK_STATUS_CANCELED,task5.getStatus());
         Thread thread=new Thread(()->{
             try {
-                System.out.println("666");
                 Assertions.assertTrue(redisService.addTaskQueue(task6));
             } catch (DownloadException e) {
                 throw new RuntimeException(e);
