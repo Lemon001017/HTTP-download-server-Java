@@ -5,7 +5,7 @@ import SideBar from '../components/SideBar.vue'
 import { ElMessage } from 'element-plus';
 
 import backend from '../backend'
-import { id } from 'element-plus/es/locale/index.mjs';
+import { id, it } from 'element-plus/es/locale/index.mjs';
 
 const BASE_URL = 'http://localhost:8080';
 
@@ -22,14 +22,7 @@ const options = ref([
     { value: 'failed', label: 'Failed' }
 ])
 
-const data = [
-    { id: 1, label: 'Task 1' ,value: 'Value1'},
-    { id: 2, label: 'Task 2' ,value: 'Value2'},
-    { id: 3, label: 'Task 3' ,value: 'Value3'},
-    { id: 4, label: 'Task 4' ,value: 'Value4'},
-    { id: 5, label: 'Task 5' ,value: 'Value5'},
-    { id: 6, label: 'Task 6' ,value: 'Value6'},
-]
+const data = ref([])
 
 const showErrorMessage = () => {
     ElMessage({
@@ -47,17 +40,17 @@ let transfersSource = null
 async function taskSubmit() {
     console.log(selectedOptions.value)
 
-    
+
     const formData = new FormData();
     formData.append('url', urlInput.value);
 
     const resp = await fetch(BASE_URL + "/api/task/submit", {
         method: "POST",
         body: formData,
-        
+
     })
-    const data = await resp.json();  
-    const taskId = data.data;  
+    const data = await resp.json();
+    const taskId = data.data;
 
     const eventUrl = `${BASE_URL}/api/event/${taskId}`;
     transfersSource = new EventSource(eventUrl);
@@ -73,23 +66,93 @@ async function taskSubmit() {
     };
 }
 
+const formatDate = (isoTimestamp) => {
+    const date = new Date(isoTimestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 async function getTaskList() {
     const formData = new FormData();
-    formData.append('status', JSON.stringify(optionsValue.value));
+    formData.append('status', optionsValue.value);
 
-    const resp = await fetch(BASE_URL + "/api/task/list", {
+    const response = await fetch(BASE_URL + "/api/task/list", {
         method: "POST",
-        // headers: {
-        //     "Content-Type": "application/json"
-        // },
         body: formData
     })
-    // await backend.post('/api/task/list', {
-    //     status:optionsValue.value,
-    // }
-    // )
+    const responseData = await response.json();
+    data.value = responseData.data;
+    data.value.forEach(item => {
+        if (item.size < 1024) item.size = item.size + 'B'
+        if (item.size < 1024 * 1024) item.size = (item.size / 1024).toFixed(2) + 'KB'
+        else item.size = (item.size / (1024 * 1024)).toFixed(2) + 'MB'
+    })
+    console.log(data.value);
 }
 const selectedOptions = ref([])
+
+async function resumeTasks(ids) {
+    const formData = new FormData();
+    let idsArray = Array.isArray(ids) ? ids : [ids];
+    const requestBody = JSON.stringify(idsArray);
+    await fetch(BASE_URL + '/api/task/resume', {
+        method: "POST",
+        headers:{
+            'Content-Type': 'application/json'
+        },
+        body: requestBody
+    })
+    getTaskList();
+}
+
+async function restartTasks(ids) {
+    const formData = new FormData();
+    let idsArray = Array.isArray(ids) ? ids : [ids];
+    const requestBody = JSON.stringify(idsArray);
+    await fetch(BASE_URL + '/api/task/restart', {
+        method: "POST",
+        headers:{
+            'Content-Type': 'application/json'
+        },
+        body: requestBody
+    })
+    getTaskList();
+}
+
+async function deleteTasks(ids) {
+    const formData = new FormData();
+    let idsArray = Array.isArray(ids) ? ids : [ids];
+    const requestBody = JSON.stringify(idsArray);
+    await fetch(BASE_URL + '/api/task/delete', {
+        method: "POST",
+        headers:{
+            'Content-Type': 'application/json'
+        },
+        body: requestBody
+    })
+    getTaskList();
+}
+
+// async function resumeTasks(ids) {
+//     let idsArray = Array.isArray(ids) ? ids : [ids];
+//     await backend.post('/api/task/resume', {
+//         ids: idsArray
+//     })
+// }
+// async function restartTasks(ids) {
+//     let idsArray = Array.isArray(ids) ? ids : [ids];
+//     await backend.post('/api/task/restart', {
+//         ids: idsArray
+//     })
+// }
+// async function deleteTasks(ids) {
+//     let idsArray = Array.isArray(ids) ? ids : [ids];
+//     await backend.post('/api/task/delete', {
+//         ids: idsArray
+//     })
+// }
 
 onMounted(() => {
     getTaskList()
@@ -116,38 +179,42 @@ onMounted(() => {
                     </el-select>
                 </el-col>
                 <div class="flex justify-end w-[95%]">
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"  @click="resumeTasks(selectedOptions)">
                         <img src="../assets/shuaxin.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full" @click="restartTasks(selectedOptions)">
                         <img src="../assets/kaishi.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full" @click="deleteTasks(selectedOptions)">
                         <img src="../assets/shanchu.svg" alt="Button Image"
                             class="h-[34px] m-[6px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
                 </div>
                 <div class="w-[95%] ml-[25px]">
                     <div v-for="(item, index) in data" :key="index" class="border-2 m-4 rounded-xl">
-                        <div class="mx-2 my-4" style="display: flex;">
+                        <div class="mx-2 my-2" style="display: flex;">
                             <input type="checkbox" :id="`option-${index}`" :value="item.id" v-model="selectedOptions"
                                 class="p-2 w-[18px] mx-4">
                             <div class="m-4 flex flex-col flex-1 ">
                                 <div class="flex justify-between ">
-                                    <label class="w-[20vw] flex-none" :for="`option-${index}`">{{ item.label }}</label>
-                                    <el-input-number v-model="taskNum" :min="1" :max="10" @change="handleChange" />
+                                    <label class="w-[20vw] flex-none flex items-center" :for="`option-${index}`">{{
+                                        item.name }}</label>
+                                    <el-input-number v-model="item.threads" :min="1" :max="10" @change="handleChange" />
                                     <div class="flex">
-                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="resumeTasks(item.id)">
                                             <img src="../assets/shuaxin.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
-                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="restartTasks(item.id)">
                                             <img src="../assets/kaishi.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
-                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full">
+                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="deleteTasks(item.id)">
                                             <img src="../assets/shanchu.svg" alt="Button Image"
                                                 class="h-[24px] m-[4px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
@@ -157,10 +224,10 @@ onMounted(() => {
                                     <el-progress :percentage="50"></el-progress>
                                 </div>
                                 <div class="flex justify-between">
-                                    <p>{{ 1 }}MB/s / {{ 2 }}MB</p>
-                                    <div class="flex">
-                                        <img src="../assets/时间_.svg">
-                                        <p>{{ 1 }}</p>
+                                    <p>{{ 1 }}MB/s / {{ item.size }}</p>
+                                    <div class="flex m-2">
+                                        <img src="../assets/时间_.svg" class="mx-1">
+                                        <p>{{ formatDate(item.gmtCreated) }}</p>
                                     </div>
                                 </div>
                             </div>
