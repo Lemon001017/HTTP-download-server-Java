@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class RedisServiceImpl implements RedisService {
     private final RedisTemplate<String, String> redisTemplate;
-    private final SettingsMapper settingsMapper;
     private final TaskMapper taskMapper;
     private final Random random = new Random();
+    private final Settings settings;
     private static final Logger LOG = LoggerFactory.getLogger(RedisServiceImpl.class);
 
 
@@ -36,8 +36,8 @@ public class RedisServiceImpl implements RedisService {
     @Autowired
     public RedisServiceImpl(TaskMapper taskMapper,SettingsMapper settingsMapper,RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
-        this.settingsMapper=settingsMapper;
         this.taskMapper=taskMapper;
+        settings=settingsMapper.selectById(1);
     }
 
     @Override
@@ -89,7 +89,6 @@ public class RedisServiceImpl implements RedisService {
     @Override
     @Retryable(retryFor = {DownloadException.class}, maxAttempts = Constants.DEFAULT_MAX_ATTEMPTS)
     public boolean addTaskQueue(Task task){
-        Settings settings= settingsMapper.selectById(1);
             ListOperations<String, String> listOperations= redisTemplate.opsForList();
             Long beforeSize=listOperations.size(Constants.KEY_WORK_QUEUE);
                 if (beforeSize >= settings.getMaxTasks()) {

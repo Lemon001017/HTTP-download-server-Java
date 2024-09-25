@@ -28,7 +28,7 @@ public final class Constants {
 
 
     // Spring Retry
-    public static final int DEFAULT_MAX_ATTEMPTS= 120;
+    public static final int DEFAULT_MAX_ATTEMPTS= 60;
     public static final long DEFAULT_BACKOFF_MILLIS = 1000;
 
     // Task Status
