@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.annotation.EnableRetry;
 
-@EnableRetry
+
 @SpringBootApplication
 @MapperScan("com.example.HttpDownloadServer.mapper")
 public class HttpDownloadServerApplication {

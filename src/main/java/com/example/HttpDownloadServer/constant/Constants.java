@@ -22,12 +22,14 @@ public final class Constants {
     public static final int MID_CHUNK_SIZE = 1024 * 1024;
     public static final int MAX_CHUNK_SIZE = 10 * 1024 * 1024;
 
-    // Redis Key
-    public static final String KEY_CHUNK_HASHMAP = "CHUNK_HASHMAP";
+    // Redis
+    public static final String KEY_CHUNK_STRING_PREFIX = "CHUNK_STRING_";
     public static final String KEY_WORK_QUEUE = "WORK_QUEUE";
 
+    public static final int KEY_EXPIRE_MINUTES = 24*60;
 
-    // Spring Retry
+
+    // Retry
     public static final int DEFAULT_MAX_ATTEMPTS= 60;
     public static final long DEFAULT_BACKOFF_MILLIS = 1000;
 
@@ -42,7 +44,7 @@ public final class Constants {
     // HTTP Status
     public static final HTTPStatusParam STORAGE_INIT_ERROR = new HTTPStatusParam(510, HttpStatus.NOT_EXTENDED, "Storage initialization failed");
     public static final HTTPStatusParam STORAGE_READ_ERROR = new HTTPStatusParam(500, HttpStatus.INTERNAL_SERVER_ERROR, "Resource read failed");
-    public static final HTTPStatusParam TASK_QUEUE_FULL = new HTTPStatusParam(501, HttpStatus.NOT_IMPLEMENTED, "task queue full");
+    public static final HTTPStatusParam TASK_QUEUE_SLEEP_ERROR = new HTTPStatusParam(501, HttpStatus.NOT_IMPLEMENTED, "task queue can`t sleep");
     // HTTP Code
     public static final String HTTP_STATUS_OK = "200";
     public static final String HTTP_STATUS_BAD_REQUEST = "400";

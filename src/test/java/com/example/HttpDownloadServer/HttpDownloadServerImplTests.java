@@ -1,9 +1,12 @@
 package com.example.HttpDownloadServer;
 
 import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.exception.DownloadException;
+import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.service.RedisService;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,11 +14,23 @@ import org.springframework.retry.ExhaustedRetryException;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @SpringBootTest
 public class HttpDownloadServerImplTests {
-@Autowired
-    private RedisService redisService;
+
+    private final RedisService redisService;
+    private final SettingsMapper settingsMapper;
+
+    @Autowired
+    HttpDownloadServerImplTests(RedisService redisService, SettingsMapper settingsMapper){
+        this.redisService=redisService;
+        this.settingsMapper=settingsMapper;
+    }
 
     @BeforeEach
     public void initRedis() {
@@ -23,13 +38,17 @@ public class HttpDownloadServerImplTests {
         for(int i = 0; i < 5; i++){
             redisService.updateScoreboard("test", i);
         }
+
     }
     @AfterEach
     public void clearRedis() {
         redisService.deleteScoreboard("test");
+
     }
     @Test
     public void testGet() {
+        long time1 = System.currentTimeMillis();
+        redisService.getScoreboard("test");
         int[] ints={5,6,7,8,9};
         List<Integer> list= Arrays.stream(ints).boxed().toList();
         Assertions.assertEquals(list, redisService.getScoreboard("test"));
@@ -42,12 +61,17 @@ public class HttpDownloadServerImplTests {
                 10L, 10, "test", "test", "downloaded",
                 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
+        Settings settings = new Settings(1, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+        settingsMapper.insert(settings);
         Assertions.assertTrue(redisService.addTaskQueue(task));
         Assertions.assertTrue(redisService.deleteTaskQueue(task));
+        settingsMapper.deleteById(1);
     }
 
     @Test
     public void testUnnormalAddTask() throws InterruptedException {
+        Settings settings = new Settings(1, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+        settingsMapper.insert(settings);
         Task task1 = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "downloaded",
@@ -101,5 +125,6 @@ public class HttpDownloadServerImplTests {
         Assertions.assertTrue(redisService.deleteTaskQueue(task4));
         Assertions.assertFalse(redisService.deleteTaskQueue(task5));
         Assertions.assertTrue(redisService.deleteTaskQueue(task6));
+        settingsMapper.deleteById(1);
     }
 }

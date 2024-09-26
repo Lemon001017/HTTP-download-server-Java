@@ -12,13 +12,16 @@ public interface RedisService {
 
     void initializeScoreboard(String taskId, int chunkNum);
 
+
     void updateScoreboard(String taskId, int chunkId);
+
 
     List<Integer> getScoreboard(String taskId);
 
+
     void deleteScoreboard(String taskId);
 
-    @Retryable(retryFor = {DownloadException.class}, maxAttempts = Constants.DEFAULT_MAX_ATTEMPTS,backoff = @Backoff(delay = Constants.DEFAULT_BACKOFF_MILLIS))
+
     boolean addTaskQueue(Task task);
 
     boolean deleteTaskQueue(Task task);
