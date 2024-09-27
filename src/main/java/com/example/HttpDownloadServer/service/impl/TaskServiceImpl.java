@@ -144,7 +144,9 @@ public class TaskServiceImpl implements TaskService {
                 }
             }
 
-            redisService.updateScoreboard(task.getId(), index);
+            synchronized (lock) {
+                redisService.updateScoreboard(task.getId(), index);
+            }
 
             if (task.getTotalDownloaded() == task.getSize() || redisService.getScoreboard(task.getId()).isEmpty()) {
                 log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());

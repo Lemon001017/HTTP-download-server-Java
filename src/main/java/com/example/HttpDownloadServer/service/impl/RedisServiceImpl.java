@@ -22,15 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisServiceImpl implements RedisService {
-    //    @Autowired
     private final RedisTemplate<String, String> redisTemplate;
-    //    @Autowired
     private final TaskMapper taskMapper;
-    //    @Autowired
     private final SettingsMapper settingsMapper;
     private final Random random = new Random();
     private final Object lock = new Object();
-    private static final Logger LOG = LoggerFactory.getLogger(RedisServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(RedisServiceImpl.class);
 
 
     @Autowired
@@ -42,28 +39,44 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public void initializeScoreboard(String taskId, int chunkNum) {
+        log.info("init scoreboard id: {} chunkNum: {}", taskId, chunkNum);
         ConcurrentHashMap<String, Boolean> scoreboard = new ConcurrentHashMap<>(chunkNum);
         for (int i = 0; i < chunkNum; i++) {
             scoreboard.put(String.valueOf(i), false);
         }
-        redisTemplate.opsForValue().set(Constants.KEY_CHUNK_STRING_PREFIX + taskId, JSON.toJSONString(scoreboard), Constants.KEY_EXPIRE_MINUTES+random.nextInt(60), TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(
+                Constants.KEY_CHUNK_STRING_PREFIX + taskId, JSON.toJSONString(scoreboard),
+                Constants.KEY_EXPIRE_MINUTES + random.nextInt(60), TimeUnit.MINUTES
+        );
     }
 
     @Override
     public void updateScoreboard(String taskId, int chunkId) {
-        ConcurrentHashMap<String, Boolean> scoreboard = JSON.parseObject(redisTemplate.opsForValue().get(Constants.KEY_CHUNK_STRING_PREFIX + taskId), new TypeReference<>() {
-        });
+        ConcurrentHashMap<String, Boolean> scoreboard = JSON.parseObject(
+                redisTemplate.opsForValue().get(Constants.KEY_CHUNK_STRING_PREFIX + taskId),
+                new TypeReference<>() {
+                }
+        );
+
         if (scoreboard != null) {
             scoreboard.put(String.valueOf(chunkId), true);
-            redisTemplate.opsForValue().set(Constants.KEY_CHUNK_STRING_PREFIX + taskId, JSON.toJSONString(scoreboard),Constants.KEY_EXPIRE_MINUTES+random.nextInt(60), TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(Constants.KEY_CHUNK_STRING_PREFIX + taskId,
+                    JSON.toJSONString(scoreboard),
+                    Constants.KEY_EXPIRE_MINUTES + random.nextInt(60),
+                    TimeUnit.MINUTES
+            );
         }
     }
 
     @Override
     public List<Integer> getScoreboard(String taskId) {
         List<Integer> chunkIds = new ArrayList<>();
-        ConcurrentHashMap<String, Boolean> scoreboard = JSON.parseObject(redisTemplate.opsForValue().get(Constants.KEY_CHUNK_STRING_PREFIX + taskId), new TypeReference<>() {
-        });
+        ConcurrentHashMap<String, Boolean> scoreboard = JSON.parseObject(
+                redisTemplate.opsForValue().get(Constants.KEY_CHUNK_STRING_PREFIX + taskId),
+                new TypeReference<>() {
+                }
+        );
+
         if (scoreboard != null) {
             scoreboard.forEach((key, value) -> {
                 if (!value) {
@@ -76,6 +89,7 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public void deleteScoreboard(String taskId) {
+        log.info("delete scoreboard id: {}", taskId);
         redisTemplate.opsForValue().getAndDelete(Constants.KEY_CHUNK_STRING_PREFIX + taskId);
     }
 
@@ -98,11 +112,10 @@ public class RedisServiceImpl implements RedisService {
                 synchronized (lock) {
                     Long afterSize = listOperations.leftPush(Constants.KEY_WORK_QUEUE, JSON.toJSONString(task));
                     if (afterSize != null) {
-                        LOG.info("add task to work queue, taskId: {}", task.getId());
+                        log.info("add task to work queue, taskId: {}", task.getId());
                         return afterSize > 0L;
                     }
                 }
-                // redis内无任务队列时，直接放入队列
             } else {
                 synchronized (lock) {
                     Long afterSize = listOperations.leftPush(Constants.KEY_WORK_QUEUE, JSON.toJSONString(task));
@@ -111,7 +124,7 @@ public class RedisServiceImpl implements RedisService {
                     }
                 }
             }
-            LOG.error("add task to work queue failed, taskId: {}", task.getId());
+            log.error("add task to work queue failed, taskId: {}", task.getId());
             return false;
         }
         task.setStatus(Constants.TASK_STATUS_CANCELED);

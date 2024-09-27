@@ -1,10 +1,6 @@
 package com.example.HttpDownloadServer.service;
 
-import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.exception.DownloadException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 
 import java.util.List;
 

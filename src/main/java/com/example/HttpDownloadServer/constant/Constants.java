@@ -3,7 +3,6 @@ package com.example.HttpDownloadServer.constant;
 import com.example.HttpDownloadServer.param.HTTPStatusParam;
 import org.springframework.http.HttpStatus;
 
-import java.util.Random;
 
 public final class Constants {
 
