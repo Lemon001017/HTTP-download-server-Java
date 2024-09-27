@@ -155,6 +155,7 @@ public class TaskServiceImpl implements TaskService {
                 task.setRemainingTime(0);
                 task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
                 taskMapper.updateById(task);
+                sseService.send(task.getId(), task);
             }
 
             in.close();

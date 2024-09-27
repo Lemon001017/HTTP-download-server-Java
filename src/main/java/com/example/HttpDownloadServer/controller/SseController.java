@@ -1,7 +1,6 @@
 package com.example.HttpDownloadServer.controller;
 
 import com.example.HttpDownloadServer.service.SseService;
-import com.example.HttpDownloadServer.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,8 +15,8 @@ public class SseController {
     @Autowired
     private SseService sseService;
 
-    @GetMapping("{id}")
-    public Result<SseEmitter> handleSse(@PathVariable String id) {
-        return sseService.subscribe(id);
+    @GetMapping("/{taskId}")
+    public SseEmitter handleSse(@PathVariable String taskId) {
+        return sseService.subscribe(taskId).getData();
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SseServiceImpl implements SseService {
@@ -20,29 +21,40 @@ public class SseServiceImpl implements SseService {
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-
     @Override
     public Result<SseEmitter> subscribe(String id) {
         Result<SseEmitter> result = new Result<>();
-        SseEmitter sseEmitter = new SseEmitter(60 * 1000L);
-        emitters.put(id, sseEmitter);
-        sseEmitter.onCompletion(() -> emitters.remove(id));
-        sseEmitter.onTimeout(() -> emitters.remove(id));
-        result.setCode(Constants.HTTP_STATUS_OK);
-        result.setData(sseEmitter);
+
+        SseEmitter emitter = new SseEmitter(TimeUnit.MINUTES.toMillis(30));
+        emitters.put(id, emitter);
+
+        emitter.onCompletion(() -> emitters.remove(id));
+        emitter.onTimeout(() -> {
+            emitters.remove(id);
+            log.warn("SSE connection timed out for task id: {}", id);
+        });
+        emitter.onError((e) -> {
+            emitters.remove(id);
+            log.error("SSE connection error for task id: {}", id, e);
+        });
+
+        result.setData(emitter);
+        result.setCode(Constants.HTTP_STATUS_OK); // 成功订阅
         return result;
     }
 
     @Override
     public void send(String id, Task task) {
-        SseEmitter sseEmitter = emitters.get(id);
-        if (sseEmitter != null) {
+        SseEmitter emitter = emitters.get(id);
+        if (emitter != null) {
             try {
-                sseEmitter.send(task);
+                emitter.send(task);
             } catch (IOException e) {
-                log.error("Failed to send SSE message to client: {} id:{}", e.getMessage(), id);
+                log.error("Failed to send SSE event to task id: {}", id, e);
                 emitters.remove(id);
             }
+        } else {
+            log.warn("No SSE emitter found for task id: {}", id);
         }
     }
 }

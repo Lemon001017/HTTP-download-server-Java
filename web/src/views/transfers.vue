@@ -35,8 +35,6 @@ const showErrorMessage = () => {
 
 defineExpose({ showErrorMessage })
 
-let transfersSource = null
-
 async function taskSubmit() {
     console.log(selectedOptions.value)
 
@@ -53,16 +51,16 @@ async function taskSubmit() {
     const taskId = data.data;
 
     const eventUrl = `${BASE_URL}/api/event/${taskId}`;
-    transfersSource = new EventSource(eventUrl);
+    const eventSource = new EventSource(eventUrl);
 
-    transfersSource.addEventListener('message', (event) => {
-        const eventData = JSON.parse(event.data);
-        console.log(eventData);
-    });
+    eventSource.onmessage = function(event) {
+      const task = JSON.parse(event.data);
+      console.log('Task update:', task);
+    };
 
-    transfersSource.onerror = (error) => {
-        console.error('Error in SSE:', error);
-        transfersSource.close();
+    eventSource.onerror = function(event) {
+      console.error("SSE connection error", event);
+      eventSource.close();
     };
 }
 

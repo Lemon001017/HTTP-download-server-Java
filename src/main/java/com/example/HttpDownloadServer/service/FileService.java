@@ -5,7 +5,6 @@ import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.param.FileParams;
 import com.example.HttpDownloadServer.utils.Result;
 
-import java.io.IOException;
 import java.util.List;
 
 public interface FileService {
