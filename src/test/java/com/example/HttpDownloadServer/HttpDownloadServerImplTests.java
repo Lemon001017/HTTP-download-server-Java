@@ -3,7 +3,6 @@ package com.example.HttpDownloadServer;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.exception.DownloadException;
 import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.service.RedisService;
 import org.junit.jupiter.api.*;
@@ -22,50 +21,53 @@ public class HttpDownloadServerImplTests {
     private final SettingsMapper settingsMapper;
 
     @Autowired
-    HttpDownloadServerImplTests(RedisService redisService, SettingsMapper settingsMapper) {
-        this.redisService = redisService;
-        this.settingsMapper = settingsMapper;
+    HttpDownloadServerImplTests(RedisService redisService, SettingsMapper settingsMapper){
+        this.redisService=redisService;
+        this.settingsMapper=settingsMapper;
     }
 
     @BeforeEach
     public void initRedis() {
-        redisService.initializeScoreboard("test", 10);
-        for (int i = 0; i < 5; i++) {
-            redisService.updateScoreboard("test", i);
+        for(int j=0;j<10;j++) {
+            redisService.initializeScoreboard(Constants.KEY_CHUNK_STRING_PREFIX + j, 10);
+            for (int i = 0; i < 5; i++) {
+                redisService.updateScoreboard(Constants.KEY_CHUNK_STRING_PREFIX + j, i);
+            }
         }
 
     }
-
     @AfterEach
     public void clearRedis() {
-        redisService.deleteScoreboard("test");
+        for(int j=0;j<10;j++) {
+            redisService.deleteScoreboard(Constants.KEY_CHUNK_STRING_PREFIX+j);
+        }
     }
-
     @Test
     public void testGet() {
-        redisService.getScoreboard("test");
-        int[] nums = {5, 6, 7, 8, 9};
-        List<Integer> list = Arrays.stream(nums).boxed().toList();
-        Assertions.assertEquals(list, redisService.getScoreboard("test"));
+        for(int j=0;j<10;j++) {
+            int[] ints = {5, 6, 7, 8, 9};
+            List<Integer> list = Arrays.stream(ints).boxed().toList();
+            Assertions.assertEquals(list, redisService.getScoreboard(Constants.KEY_CHUNK_STRING_PREFIX+j));
+        }
     }
 
     @Test
     public void testNormalAddTask() {
         Task task = new Task(
-                "1", "test", "test",
+                "2", "test", "test",
                 10L, 10, "test", "test", "downloaded",
                 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
-        Settings settings = new Settings(1, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
         settingsMapper.insert(settings);
         Assertions.assertTrue(redisService.addTaskQueue(task));
         Assertions.assertTrue(redisService.deleteTaskQueue(task));
-        settingsMapper.deleteById(1);
+        settingsMapper.deleteById(2);
     }
 
     @Test
     public void testUnnormalAddTask() throws InterruptedException {
-        Settings settings = new Settings(1, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
         settingsMapper.insert(settings);
         Task task1 = new Task(
                 "1", "test", "test",
@@ -103,14 +105,8 @@ public class HttpDownloadServerImplTests {
         Assertions.assertTrue(redisService.addTaskQueue(task3));
         Assertions.assertTrue(redisService.addTaskQueue(task4));
         Assertions.assertFalse(redisService.addTaskQueue(task5));
-        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED, task5.getStatus());
-        Thread thread = new Thread(() -> {
-            try {
-                Assertions.assertTrue(redisService.addTaskQueue(task6));
-            } catch (DownloadException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED,task5.getStatus());
+        Thread thread=new Thread(()-> Assertions.assertTrue(redisService.addTaskQueue(task6)));
         thread.start();
         Thread.sleep(1000);
         Assertions.assertTrue(redisService.deleteTaskQueue(task1));
@@ -120,6 +116,6 @@ public class HttpDownloadServerImplTests {
         Assertions.assertTrue(redisService.deleteTaskQueue(task4));
         Assertions.assertFalse(redisService.deleteTaskQueue(task5));
         Assertions.assertTrue(redisService.deleteTaskQueue(task6));
-        settingsMapper.deleteById(1);
+        settingsMapper.deleteById(2);
     }
 }
