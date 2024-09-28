@@ -6,19 +6,14 @@ import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.exception.DownloadException;
 import com.example.HttpDownloadServer.mapper.SettingsMapper;
 import com.example.HttpDownloadServer.service.RedisService;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.retry.ExhaustedRetryException;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 public class HttpDownloadServerImplTests {
@@ -27,30 +22,30 @@ public class HttpDownloadServerImplTests {
     private final SettingsMapper settingsMapper;
 
     @Autowired
-    HttpDownloadServerImplTests(RedisService redisService, SettingsMapper settingsMapper){
-        this.redisService=redisService;
-        this.settingsMapper=settingsMapper;
+    HttpDownloadServerImplTests(RedisService redisService, SettingsMapper settingsMapper) {
+        this.redisService = redisService;
+        this.settingsMapper = settingsMapper;
     }
 
     @BeforeEach
     public void initRedis() {
         redisService.initializeScoreboard("test", 10);
-        for(int i = 0; i < 5; i++){
+        for (int i = 0; i < 5; i++) {
             redisService.updateScoreboard("test", i);
         }
 
     }
+
     @AfterEach
     public void clearRedis() {
         redisService.deleteScoreboard("test");
-
     }
+
     @Test
     public void testGet() {
-        long time1 = System.currentTimeMillis();
         redisService.getScoreboard("test");
-        int[] ints={5,6,7,8,9};
-        List<Integer> list= Arrays.stream(ints).boxed().toList();
+        int[] nums = {5, 6, 7, 8, 9};
+        List<Integer> list = Arrays.stream(nums).boxed().toList();
         Assertions.assertEquals(list, redisService.getScoreboard("test"));
     }
 
@@ -108,8 +103,8 @@ public class HttpDownloadServerImplTests {
         Assertions.assertTrue(redisService.addTaskQueue(task3));
         Assertions.assertTrue(redisService.addTaskQueue(task4));
         Assertions.assertFalse(redisService.addTaskQueue(task5));
-        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED,task5.getStatus());
-        Thread thread=new Thread(()->{
+        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED, task5.getStatus());
+        Thread thread = new Thread(() -> {
             try {
                 Assertions.assertTrue(redisService.addTaskQueue(task6));
             } catch (DownloadException e) {

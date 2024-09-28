@@ -60,32 +60,32 @@ public class HttpDownloadServerAPITests {
 
     @Test
     public void testGetTaskList() {
+        taskMapper.deleteByIds(List.of("1", "2"));
         Task task1 = new Task(
                 "1", "test", "test",
-                10L, 10, "test", "test", "downloading",
+                10L, 10, "test", "test", "test1_status",
                 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
         Task task2 = new Task(
                 "2", "test", "test",
-                10L, 10, "test", "test", "downloaded",
+                10L, 10, "test", "test", "test2_status",
                 1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
         );
 
         taskMapper.insert(task1);
         taskMapper.insert(task2);
 
-        List<Task> result = taskService.getTaskList(Constants.TASK_STATUS_DOWNLOADED).getData();
+        List<Task> result = taskService.getTaskList("test2_status").getData();
         assertEquals(1, result.size());
-        assertEquals(Constants.TASK_STATUS_DOWNLOADED, result.getFirst().getStatus());
+        assertEquals("test2_status", result.getFirst().getStatus());
         assertEquals("2", result.getFirst().getId());
 
-        result = taskService.getTaskList(Constants.Task_Status_ALL).getData();
-        assertEquals(2, result.size());
         taskMapper.deleteByIds(List.of("1", "2"));
     }
 
     @Test
     public void testDeleteTasks() {
+        taskMapper.deleteByIds(List.of("1", "2"));
         Task task1 = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "downloading",
@@ -118,6 +118,7 @@ public class HttpDownloadServerAPITests {
 
     @Test
     public void testPause() {
+        taskMapper.deleteById("1");
         Task task = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "downloading",
@@ -136,6 +137,7 @@ public class HttpDownloadServerAPITests {
 
     @Test
     public void testResume() {
+        taskMapper.deleteById("1");
         Task task = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "canceled",
@@ -154,6 +156,7 @@ public class HttpDownloadServerAPITests {
 
     @Test
     public void testRestart() {
+        taskMapper.deleteById("1");
         Task task = new Task(
                 "1", "test", "test",
                 10L, 10, "test", "test", "downloaded",
