@@ -215,12 +215,12 @@ onMounted(() => {
                 </el-col>
                 <div class="flex justify-end w-[95%]">
                     <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
-                        @click="resumeTasks(selectedOptions)">
+                        @click="restartTasks(selectedOptions)">
                         <img src="../assets/shuaxin.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
                     <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
-                        @click="restartTasks(selectedOptions)">
+                        @click="resumeTasks(selectedOptions)">
                         <img src="../assets/kaishi.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
@@ -242,13 +242,18 @@ onMounted(() => {
                                     <el-input-number v-model="item.progress.threads" :min="1" :max="10" @change="handleChange" />
                                     <div class="flex">
                                         <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
-                                            @click="resumeTasks(item.id)">
+                                            @click="restartTasks(item.id)">
                                             <img src="../assets/shuaxin.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
-                                        <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
-                                            @click="restartTasks(item.id)">
+                                        <button v-if="item.progress.status == 'pending'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="resumeTasks(item.id)">
                                             <img src="../assets/kaishi.svg" alt="Button Image"
+                                                class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
+                                        </button>
+                                        <button v-else-if="item.progress.status != 'pending'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="resumeTasks(item.id)">
+                                            <img src="../assets/暂停.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
                                         <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
@@ -263,6 +268,8 @@ onMounted(() => {
                                 </div>
                                 <div class="flex justify-between">
                                     <p>{{ formatMB(item.progress.totalDownloaded) }} / {{ formatMB(item.progress.size) }}</p>
+                                    <p v-if="item.progress.status=='downloading'">RemainingTime:{{ item.progress.remainingTime }}s</p>
+                                    <p v-else>{{ item.progress.status }}</p>
                                     <div class="flex m-2">
                                         <img src="../assets/时间_.svg" class="mx-1">
                                         <p>{{ formatDate(item.progress.gmtCreated) }}</p>
