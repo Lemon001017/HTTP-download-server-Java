@@ -23,7 +23,7 @@ const options = ref([
 ])
 
 const data = ref([])
-
+const newData = ref([])
 const showErrorMessage = () => {
     ElMessage({
         showClose: true,
@@ -36,9 +36,6 @@ const showErrorMessage = () => {
 defineExpose({ showErrorMessage })
 
 async function taskSubmit() {
-    console.log(selectedOptions.value)
-
-
     const formData = new FormData();
     formData.append('url', urlInput.value);
 
@@ -47,21 +44,11 @@ async function taskSubmit() {
         body: formData,
 
     })
-    const data = await resp.json();
-    const taskId = data.data;
+    const sseData = await resp.json();
+    const taskId = sseData.data;
 
-    const eventUrl = `${BASE_URL}/api/event/${taskId}`;
-    const eventSource = new EventSource(eventUrl);
-
-    eventSource.onmessage = function(event) {
-      const task = JSON.parse(event.data);
-      console.log('Task update:', task);
-    };
-
-    eventSource.onerror = function(event) {
-      console.error("SSE connection error", event);
-      eventSource.close();
-    };
+    startSSE(taskId)
+    console.log(data.value)
 }
 
 const formatDate = (isoTimestamp) => {
@@ -72,7 +59,24 @@ const formatDate = (isoTimestamp) => {
     return `${year}-${month}-${day}`;
 };
 
+const formatMB = (size) => {
+    if (size < 1024) size = size + 'B'
+    if (size < 1024 * 1024) size = (size / 1024).toFixed(2) + 'KB'
+    else size = (size / (1024 * 1024)).toFixed(2) + 'MB' 
+
+    return size
+}
+function transformData(items){
+    return items.map(item => ({
+    id: item.id,
+    progress: Object.fromEntries(
+      Object.entries(item).filter(([key]) => key !== 'id')
+    )
+  }));
+}
 async function getTaskList() {
+    const eventSources = ref([]);
+
     const formData = new FormData();
     formData.append('status', optionsValue.value);
 
@@ -82,13 +86,57 @@ async function getTaskList() {
     })
     const responseData = await response.json();
     data.value = responseData.data;
-    data.value.forEach(item => {
-        if (item.size < 1024) item.size = item.size + 'B'
-        if (item.size < 1024 * 1024) item.size = (item.size / 1024).toFixed(2) + 'KB'
-        else item.size = (item.size / (1024 * 1024)).toFixed(2) + 'MB'
+    
+    newData.value = transformData(data.value)
+    newData.value.forEach(item => {
+      if(item.progress.status=="downloading") contentSSE(item.id)  
     })
-    console.log(data.value);
 }
+
+
+const startSSE = async (taskId) => {
+    const newItem = { id: taskId, progress: [] };
+    newData.value.push(newItem);
+
+    const eventUrl = `${BASE_URL}/api/event/${taskId}`;
+    const eventSource = new EventSource(eventUrl);
+
+    eventSource.onmessage = function (event) {
+        const task = JSON.parse(event.data);
+        updateProgress(taskId, task);
+    };
+
+    eventSource.onerror = function (event) {
+        console.error("SSE connection error", event);
+        eventSource.close();
+    };
+}
+
+const contentSSE = async (taskId) => {
+    const eventUrl = `${BASE_URL}/api/event/${taskId}`;
+    const eventSource = new EventSource(eventUrl);
+
+    eventSource.onmessage = function (event) {
+        const task = JSON.parse(event.data);
+        updateProgress(taskId, task);
+    };
+
+    eventSource.onerror = function (event) {
+        console.error("SSE connection error", event);
+        eventSource.close();
+    };
+    
+}
+
+const updateProgress = (taskId, newProgress) => {
+    const itemIndex = newData.value.findIndex(item => item.id == taskId);
+    if (itemIndex !== -1) {
+        newData.value[itemIndex].progress = newProgress;
+    }
+    console.log(newData.value,itemIndex)
+}
+
+
 const selectedOptions = ref([])
 
 async function resumeTasks(ids) {
@@ -97,12 +145,15 @@ async function resumeTasks(ids) {
     const requestBody = JSON.stringify(idsArray);
     await fetch(BASE_URL + '/api/task/resume', {
         method: "POST",
-        headers:{
+        headers: {
             'Content-Type': 'application/json'
         },
         body: requestBody
     })
     getTaskList();
+    for(const id of idsArray){
+        contentSSE(id)
+    }
 }
 
 async function restartTasks(ids) {
@@ -111,12 +162,16 @@ async function restartTasks(ids) {
     const requestBody = JSON.stringify(idsArray);
     await fetch(BASE_URL + '/api/task/restart', {
         method: "POST",
-        headers:{
+        headers: {
             'Content-Type': 'application/json'
         },
         body: requestBody
     })
     getTaskList();
+    for(const id of idsArray){
+        contentSSE(id)
+    }
+
 }
 
 async function deleteTasks(ids) {
@@ -125,7 +180,7 @@ async function deleteTasks(ids) {
     const requestBody = JSON.stringify(idsArray);
     await fetch(BASE_URL + '/api/task/delete', {
         method: "POST",
-        headers:{
+        headers: {
             'Content-Type': 'application/json'
         },
         body: requestBody
@@ -133,27 +188,9 @@ async function deleteTasks(ids) {
     getTaskList();
 }
 
-// async function resumeTasks(ids) {
-//     let idsArray = Array.isArray(ids) ? ids : [ids];
-//     await backend.post('/api/task/resume', {
-//         ids: idsArray
-//     })
-// }
-// async function restartTasks(ids) {
-//     let idsArray = Array.isArray(ids) ? ids : [ids];
-//     await backend.post('/api/task/restart', {
-//         ids: idsArray
-//     })
-// }
-// async function deleteTasks(ids) {
-//     let idsArray = Array.isArray(ids) ? ids : [ids];
-//     await backend.post('/api/task/delete', {
-//         ids: idsArray
-//     })
-// }
-
 onMounted(() => {
     getTaskList()
+    
 })
 
 </script>
@@ -177,29 +214,32 @@ onMounted(() => {
                     </el-select>
                 </el-col>
                 <div class="flex justify-end w-[95%]">
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"  @click="resumeTasks(selectedOptions)">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                        @click="resumeTasks(selectedOptions)">
                         <img src="../assets/shuaxin.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full" @click="restartTasks(selectedOptions)">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                        @click="restartTasks(selectedOptions)">
                         <img src="../assets/kaishi.svg" alt="Button Image"
                             class="h-[30px] m-[8px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
-                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full" @click="deleteTasks(selectedOptions)">
+                    <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                        @click="deleteTasks(selectedOptions)">
                         <img src="../assets/shanchu.svg" alt="Button Image"
                             class="h-[34px] m-[6px]  hover:opacity-75 active:scale-75 transition-all ">
                     </button>
                 </div>
                 <div class="w-[95%] ml-[25px]">
-                    <div v-for="(item, index) in data" :key="index" class="border-2 m-4 rounded-xl">
+                    <div v-for="(item, index) in newData" :key="index" class="border-2 m-4 rounded-xl">
                         <div class="mx-2 my-2" style="display: flex;">
                             <input type="checkbox" :id="`option-${index}`" :value="item.id" v-model="selectedOptions"
                                 class="p-2 w-[18px] mx-4">
                             <div class="m-4 flex flex-col flex-1 ">
                                 <div class="flex justify-between ">
                                     <label class="w-[20vw] flex-none flex items-center" :for="`option-${index}`">{{
-                                        item.name }}</label>
-                                    <el-input-number v-model="item.threads" :min="1" :max="10" @change="handleChange" />
+                                        item.progress.name }}</label>
+                                    <el-input-number v-model="item.progress.threads" :min="1" :max="10" @change="handleChange" />
                                     <div class="flex">
                                         <button type="button" class="hover:bg-blue-100 duration-200 rounded-full"
                                             @click="resumeTasks(item.id)">
@@ -219,13 +259,13 @@ onMounted(() => {
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <el-progress :percentage="50"></el-progress>
+                                    <el-progress :percentage="item.progress.progress"></el-progress>
                                 </div>
                                 <div class="flex justify-between">
-                                    <p>{{ 1 }}MB/s / {{ item.size }}</p>
+                                    <p>{{ formatMB(item.progress.totalDownloaded) }} / {{ formatMB(item.progress.size) }}</p>
                                     <div class="flex m-2">
                                         <img src="../assets/时间_.svg" class="mx-1">
-                                        <p>{{ formatDate(item.gmtCreated) }}</p>
+                                        <p>{{ formatDate(item.progress.gmtCreated) }}</p>
                                     </div>
                                 </div>
                             </div>
