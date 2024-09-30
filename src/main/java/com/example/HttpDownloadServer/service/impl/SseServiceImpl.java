@@ -57,4 +57,14 @@ public class SseServiceImpl implements SseService {
             log.warn("No SSE emitter found for task id: {}", id);
         }
     }
+
+    @Override
+    public void close(String id) {
+        SseEmitter emitter = emitters.remove(id);
+        if (emitter != null) {
+            emitter.complete(); // 关闭 SSE 连接
+        } else {
+            log.error("No SSE emitter found for task id: {}", id);
+        }
+    }
 }

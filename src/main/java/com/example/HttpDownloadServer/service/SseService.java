@@ -8,4 +8,6 @@ public interface SseService {
     Result<SseEmitter> subscribe(String id);
 
     void send(String id, Task task);
+
+    void close(String id);
 }

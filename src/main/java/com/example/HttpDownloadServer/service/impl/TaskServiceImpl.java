@@ -154,6 +154,7 @@ public class TaskServiceImpl implements TaskService {
                 task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
                 taskMapper.updateById(task);
                 sseService.send(task.getId(), task);
+                sseService.close(task.getId());
             }
 
             in.close();
@@ -183,6 +184,7 @@ public class TaskServiceImpl implements TaskService {
                 } else {
                     log.error("The task futures is null id:{}", task.getId());
                 }
+                sseService.close(task.getId());
             } else {
                 log.error("The task status is not downloading id:{} status:{}", task.getId(), task.getStatus());
                 result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
@@ -260,6 +262,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Result<List<String>> delete(List<String> ids) {
         Result<List<String>> result = new Result<>();
+        if (ids.isEmpty()) {
+            result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
+            result.setMessage("task is null");
+            return result;
+        }
         taskMapper.deleteByIds(ids);
         for (String id : ids) {
             redisService.deleteScoreboard(id);
