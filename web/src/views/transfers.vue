@@ -156,6 +156,23 @@ async function resumeTasks(ids) {
     }
 }
 
+async function pauseTasks(ids) {
+    const formData = new FormData();
+    let idsArray = Array.isArray(ids) ? ids : [ids];
+    const requestBody = JSON.stringify(idsArray);
+    await fetch(BASE_URL + '/api/task/pause', {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: requestBody
+    })
+    getTaskList();
+    for(const id of idsArray){
+        contentSSE(id)
+    }
+}
+
 async function restartTasks(ids) {
     const formData = new FormData();
     let idsArray = Array.isArray(ids) ? ids : [ids];
@@ -246,13 +263,13 @@ onMounted(() => {
                                             <img src="../assets/shuaxin.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
-                                        <button v-if="item.progress.status == 'pending'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                        <button v-if="item.progress.status == 'canceled'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
                                             @click="resumeTasks(item.id)">
                                             <img src="../assets/kaishi.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
-                                        <button v-else-if="item.progress.status != 'pending'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
-                                            @click="resumeTasks(item.id)">
+                                        <button v-else-if="item.progress.status != 'canceled'" type="button" class="hover:bg-blue-100 duration-200 rounded-full"
+                                            @click="pauseTasks(item.id)">
                                             <img src="../assets/暂停.svg" alt="Button Image"
                                                 class="h-[20px] m-[5px]  hover:opacity-75 active:scale-75 transition-all ">
                                         </button>
@@ -267,7 +284,7 @@ onMounted(() => {
                                     <el-progress :percentage="item.progress.progress"></el-progress>
                                 </div>
                                 <div class="flex justify-between">
-                                    <p>{{ formatMB(item.progress.totalDownloaded) }} / {{ formatMB(item.progress.size) }}</p>
+                                    <p>{{ item.progress.speed }}MB/s / {{ formatMB(item.progress.size) }}</p>
                                     <p v-if="item.progress.status=='downloading'">RemainingTime:{{ item.progress.remainingTime }}s</p>
                                     <p v-else>{{ item.progress.status }}</p>
                                     <div class="flex m-2">
