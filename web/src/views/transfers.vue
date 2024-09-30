@@ -168,9 +168,6 @@ async function pauseTasks(ids) {
         body: requestBody
     })
     getTaskList();
-    for(const id of idsArray){
-        contentSSE(id)
-    }
 }
 
 async function restartTasks(ids) {
@@ -188,7 +185,6 @@ async function restartTasks(ids) {
     for(const id of idsArray){
         contentSSE(id)
     }
-
 }
 
 async function deleteTasks(ids) {

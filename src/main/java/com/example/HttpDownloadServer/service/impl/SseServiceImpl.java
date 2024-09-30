@@ -54,7 +54,7 @@ public class SseServiceImpl implements SseService {
                 emitters.remove(id);
             }
         } else {
-            log.warn("No SSE emitter found for task id: {}", id);
+            log.error("No SSE emitter found for task id: {}", id);
         }
     }
 
@@ -63,8 +63,6 @@ public class SseServiceImpl implements SseService {
         SseEmitter emitter = emitters.remove(id);
         if (emitter != null) {
             emitter.complete(); // 关闭 SSE 连接
-        } else {
-            log.error("No SSE emitter found for task id: {}", id);
         }
     }
 }

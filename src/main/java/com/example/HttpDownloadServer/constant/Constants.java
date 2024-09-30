@@ -12,7 +12,7 @@ public final class Constants {
     public static final String DEFAULT_FILES_ORDER = "up";
     public static final String DEFAULT_FILES_SORT = "name";
     public static final String DEFAULT_FILES_TYPE = "All";
-    public static final Double DEFAULT_MAX_DOWNLOAD_SPEED = 1000D;
+    public static final Double DEFAULT_MAX_DOWNLOAD_SPEED = 10D;
     public static final Integer DEFAULT_MAX_TASKS = 4;
     public static final Integer DEFAULT_THREADS = 4;
 
@@ -25,11 +25,11 @@ public final class Constants {
     public static final String KEY_CHUNK_STRING_PREFIX = "CHUNK_STRING_";
     public static final String KEY_WORK_QUEUE = "WORK_QUEUE";
 
-    public static final int KEY_EXPIRE_MINUTES = 24*60;
+    public static final int KEY_EXPIRE_MINUTES = 24 * 60;
 
 
     // Retry
-    public static final int DEFAULT_MAX_ATTEMPTS= 60;
+    public static final int DEFAULT_MAX_ATTEMPTS = 60;
     public static final long DEFAULT_BACKOFF_MILLIS = 1000;
 
     // Task Status
