@@ -9,15 +9,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisToolConfig {
-    private final RedisTemplate<String, Object> redisTemplate;
-
     @Autowired
-    public RedisToolConfig(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
-
+    private RedisTemplate redisTemplate;
     @Bean
-    public RedisTemplate<String, Object> redisTemplateInit() {
+    public RedisTemplate redisTemplateInit() {
         // Tool for setting serialization keys
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         // A tool for setting serialized values
