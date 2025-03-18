@@ -2,9 +2,9 @@ package com.example.HttpDownloadServer.service.impl;
 
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
-import com.example.HttpDownloadServer.mapper.SettingsMapper;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.service.SettingsService;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

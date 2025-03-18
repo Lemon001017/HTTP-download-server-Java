@@ -1,4 +1,4 @@
-package com.example.HttpDownloadServer.mapper;
+package com.example.HttpDownloadServer.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.HttpDownloadServer.entity.Task;

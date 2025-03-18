@@ -2,13 +2,12 @@ package com.example.HttpDownloadServer.service.impl;
 
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.mapper.SettingsMapper;
-import com.example.HttpDownloadServer.mapper.TaskMapper;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
+import com.example.HttpDownloadServer.dao.TaskMapper;
 import com.example.HttpDownloadServer.service.RedisService;
 import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
-import com.example.HttpDownloadServer.utils.Result;
-import com.example.HttpDownloadServer.utils.UUIDUtils;
+import com.example.HttpDownloadServer.param.Result;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +23,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -53,7 +60,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Result<String> submit(String url) {
         Result<String> result = new Result<>();
-        String taskId = UUIDUtils.generateId();
+        String taskId = UUID.randomUUID().toString();
         result.setCode(Constants.HTTP_STATUS_OK);
         result.setData(taskId);
 

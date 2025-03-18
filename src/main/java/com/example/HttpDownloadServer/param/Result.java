@@ -1,4 +1,4 @@
-package com.example.HttpDownloadServer.utils;
+package com.example.HttpDownloadServer.param;
 
 import lombok.Data;
 

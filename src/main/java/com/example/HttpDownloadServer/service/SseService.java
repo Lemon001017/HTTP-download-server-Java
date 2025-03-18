@@ -1,7 +1,7 @@
 package com.example.HttpDownloadServer.service;
 
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 public interface SseService {

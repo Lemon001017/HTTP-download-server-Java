@@ -3,7 +3,7 @@ package com.example.HttpDownloadServer.service.impl;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.service.SseService;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

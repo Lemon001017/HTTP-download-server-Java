@@ -3,13 +3,13 @@ package com.example.HttpDownloadServer;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.mapper.SettingsMapper;
-import com.example.HttpDownloadServer.mapper.TaskMapper;
-import com.example.HttpDownloadServer.param.FileParams;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
+import com.example.HttpDownloadServer.dao.TaskMapper;
+import com.example.HttpDownloadServer.param.FileParam;
 import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.service.SettingsService;
 import com.example.HttpDownloadServer.service.TaskService;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -178,42 +178,42 @@ public class HttpDownloadServerAPITests {
         Settings settings = new Settings(1, Constants.DEFAULT_TEST_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
         fileService.init(settings);
         // test the default empty query
-        FileParams fileParams = new FileParams("", "", "");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result = fileService.fetchFileList(fileParams);
+        FileParam fileParam = new FileParam("", "", "");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result = fileService.fetchFileList(fileParam);
         assertEquals(result.getData().size(), 13);
         assertTrue(result.getData().getFirst().getName().compareTo(result.getData().getLast().getName()) < 0);
 
         // test Type=All and Sort=name and Order=up
-        FileParams fileParams1 = new FileParams("All", "name", "up");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result1 = fileService.fetchFileList(fileParams1);
+        FileParam fileParam1 = new FileParam("All", "name", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result1 = fileService.fetchFileList(fileParam1);
         assertEquals(result1.getData().size(), 13);
         assertTrue(result1.getData().getFirst().getName().compareTo(result1.getData().getLast().getName()) < 0);
 
         // test Type=Video and Sort=size and Order=down
-        FileParams fileParams2 = new FileParams("Video", "size", "down");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result2 = fileService.fetchFileList(fileParams2);
+        FileParam fileParam2 = new FileParam("Video", "size", "down");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result2 = fileService.fetchFileList(fileParam2);
         assertTrue(result2.getData().getFirst().getSize() > result2.getData().getLast().getSize());
         result2.getData().forEach(file -> {
             assertTrue(file.getName().endsWith(".mp4") || file.getName().endsWith(".mov"));
         });
 
         // test Type=Archive
-        FileParams fileParams4 = new FileParams("Archive", "gmtCreated", "up");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result4 = fileService.fetchFileList(fileParams4);
+        FileParam fileParam4 = new FileParam("Archive", "gmtCreated", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result4 = fileService.fetchFileList(fileParam4);
         result4.getData().forEach(file -> {
             assertTrue(file.getName().endsWith(".zip") || file.getName().endsWith(".rar") || file.getName().endsWith(".tar"));
         });
 
         // test Type=Document
-        FileParams fileParams5 = new FileParams("Document", "name", "up");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result5 = fileService.fetchFileList(fileParams5);
+        FileParam fileParam5 = new FileParam("Document", "name", "up");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result5 = fileService.fetchFileList(fileParam5);
         result5.getData().forEach(file -> {
             assertTrue(file.getName().endsWith(".pptx") || file.getName().endsWith(".docx") || file.getName().endsWith(".xlsx"));
         });
 
         // test for illegal parameters
-        FileParams fileParams6 = new FileParams("hello", "world", "!");
-        Result<List<com.example.HttpDownloadServer.entity.File>> result6 = fileService.fetchFileList(fileParams6);
+        FileParam fileParam6 = new FileParam("hello", "world", "!");
+        Result<List<com.example.HttpDownloadServer.entity.File>> result6 = fileService.fetchFileList(fileParam6);
         assertEquals(result6.getData().size(), 13);
         assertTrue(result6.getData().getFirst().getName().compareTo(result6.getData().getLast().getName()) < 0);
     }

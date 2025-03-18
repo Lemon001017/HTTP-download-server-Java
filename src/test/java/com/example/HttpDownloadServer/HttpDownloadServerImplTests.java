@@ -3,7 +3,7 @@ package com.example.HttpDownloadServer;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.mapper.SettingsMapper;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.service.RedisService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;

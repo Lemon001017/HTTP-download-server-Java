@@ -3,9 +3,9 @@ package com.example.HttpDownloadServer.service.impl;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.exception.StorageException;
-import com.example.HttpDownloadServer.param.FileParams;
+import com.example.HttpDownloadServer.param.FileParam;
 import com.example.HttpDownloadServer.service.FileService;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class FileServiceImpl implements FileService {
     private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Override
-    public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParams params) {
+    public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParam params) {
         Result<List<com.example.HttpDownloadServer.entity.File>> result = new Result<>();
         params.disposalFileParams();
         try (Stream<Path> pathStream= Files.walk(rootLocation, 1)){
@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
     /**
      * Stream processing, parsing, filtering, extraction, sorting, sorting
      **/
-    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParams params) {
+    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParam params) {
         return pathStream
                 .filter(path -> !path.equals(rootLocation))
                 .filter(path -> !Files.isDirectory(path))

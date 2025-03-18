@@ -2,7 +2,7 @@ package com.example.HttpDownloadServer.controller;
 
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.service.SettingsService;
-import com.example.HttpDownloadServer.utils.Result;
+import com.example.HttpDownloadServer.param.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

@@ -2,7 +2,7 @@ package com.example.HttpDownloadServer;
 
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
-import com.example.HttpDownloadServer.mapper.SettingsMapper;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.service.FileService;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.CommandLineRunner;
@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 
 
 @SpringBootApplication
-@MapperScan("com.example.HttpDownloadServer.mapper")
+@MapperScan("com.example.HttpDownloadServer.dao")
 public class HttpDownloadServerApplication {
     public static void main(String[] args) {
         SpringApplication.run(HttpDownloadServerApplication.class, args);
