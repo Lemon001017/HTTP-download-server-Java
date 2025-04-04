@@ -1,5 +1,6 @@
 package com.example.HttpDownloadServer.service.impl;
 
+import com.example.HttpDownloadServer.common.BlockingThreadPoolExecutor;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.dao.SettingsMapper;
@@ -9,6 +10,8 @@ import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.param.Result;
 import com.google.common.util.concurrent.RateLimiter;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,12 +32,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@SuppressWarnings("UnstableApiUsage")
 public class TaskServiceImpl implements TaskService {
     @Autowired
     private SettingsMapper settingsMapper;
@@ -54,8 +57,24 @@ public class TaskServiceImpl implements TaskService {
 
     private final ConcurrentHashMap<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
 
-    private final ThreadPoolExecutor downloadExecutor = new ThreadPoolExecutor(4, 8,
-            60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+    private ExecutorService downloadExecutor;
+
+    @PostConstruct
+    public void init() {
+        int maximumPoolSize = Math.max(2, Runtime.getRuntime().availableProcessors());
+        downloadExecutor = new BlockingThreadPoolExecutor(maximumPoolSize * 2, "task");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        downloadExecutor.shutdown();
+        try {
+            if (!downloadExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                downloadExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+        }
+    }
 
     @Override
     public Result<String> submit(String url) {
@@ -79,7 +98,6 @@ public class TaskServiceImpl implements TaskService {
         return result;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private void processDownload(Task task) throws IOException, URISyntaxException {
         long startTime = System.currentTimeMillis();
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
@@ -101,7 +119,6 @@ public class TaskServiceImpl implements TaskService {
         chunkFutures.put(task.getId(), futures);
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private void downloadChunk(Task task, int start, int end, File file, long startTime, int index, RateLimiter limiter) {
         try {
             HttpURLConnection conn = getConn(task.getUrl());
@@ -121,7 +138,7 @@ public class TaskServiceImpl implements TaskService {
             while ((bytesRead = in.read(buffer)) != -1) {
                 // Check whether the current thread is interrupted
                 if (Thread.currentThread().isInterrupted()) {
-                    log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().threadId());
+                    log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().getId());
                     in.close();
                     raf.close();
                     conn.disconnect();
@@ -155,23 +172,27 @@ public class TaskServiceImpl implements TaskService {
 
             if (task.getTotalDownloaded() == task.getSize() || redisService.getScoreboard(task.getId()).isEmpty()) {
                 log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());
-                redisService.deleteScoreboard(task.getId());
-                task.setProgress(100);
-                task.setRemainingTime(0);
-                task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
-                taskMapper.updateById(task);
-                sseService.send(task.getId(), task);
-                sseService.close(task.getId());
+                handleTaskFinish(task);
             }
 
             in.close();
             raf.close();
             conn.disconnect();
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             log.error("Download failed id:{} err:{}", task.getId(), e.getMessage());
             task.setStatus(Constants.TASK_STATUS_FAILED);
             taskMapper.updateById(task);
         }
+    }
+
+    private void handleTaskFinish(Task task) {
+        redisService.deleteScoreboard(task.getId());
+        task.setProgress(100);
+        task.setRemainingTime(0);
+        task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
+        taskMapper.updateById(task);
+        sseService.send(task.getId(), task);
+        sseService.close(task.getId());
     }
 
     @Override
@@ -340,10 +361,14 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
-    private HttpURLConnection getConn(String urlStr) throws IOException, URISyntaxException {
-        URI uri = new URI(urlStr);
-        URL url = uri.toURL();
-        return (HttpURLConnection) url.openConnection();
+    private HttpURLConnection getConn(String urlStr) {
+        try {
+            URI uri = new URI(urlStr);
+            URL url = uri.toURL();
+            return (HttpURLConnection) url.openConnection();
+        } catch (URISyntaxException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String extractFileName(HttpURLConnection connection, String urlString) {
@@ -353,7 +378,7 @@ public class TaskServiceImpl implements TaskService {
         List<String> contentDisposition = headers.get("Content-Disposition");
 
         if (contentDisposition != null && !contentDisposition.isEmpty()) {
-            String disposition = contentDisposition.getFirst();
+            String disposition = contentDisposition.get(0);
             int index = disposition.indexOf("filename=");
             if (index > 0) {
                 fileName = disposition.substring(index + 10, disposition.length() - 1);
