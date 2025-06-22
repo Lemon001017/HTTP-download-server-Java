@@ -3,11 +3,11 @@ package com.example.HttpDownloadServer.service.impl;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
+import com.example.HttpDownloadServer.dao.TaskMapper;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.exception.DownloadException;
-import com.example.HttpDownloadServer.dao.SettingsMapper;
-import com.example.HttpDownloadServer.dao.TaskMapper;
 import com.example.HttpDownloadServer.service.RedisService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,9 @@ import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 

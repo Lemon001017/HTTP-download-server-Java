@@ -39,7 +39,7 @@ public class SseServiceImpl implements SseService {
         });
 
         result.setData(emitter);
-        result.setCode(Constants.HTTP_STATUS_OK); // 成功订阅
+        result.setCode(Constants.HTTP_STATUS_OK);
         return result;
     }
 
@@ -62,7 +62,7 @@ public class SseServiceImpl implements SseService {
     public void close(String id) {
         SseEmitter emitter = emitters.remove(id);
         if (emitter != null) {
-            emitter.complete(); // 关闭 SSE 连接
+            emitter.complete();
         }
     }
 }

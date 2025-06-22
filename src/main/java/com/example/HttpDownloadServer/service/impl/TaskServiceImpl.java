@@ -55,14 +55,14 @@ public class TaskServiceImpl implements TaskService {
 
     private static final Object lock = new Object();
 
-    private final ConcurrentHashMap<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
+    private final Map<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
 
     private ExecutorService downloadExecutor;
 
     @PostConstruct
     public void init() {
         int maximumPoolSize = Math.max(2, Runtime.getRuntime().availableProcessors());
-        downloadExecutor = new BlockingThreadPoolExecutor(maximumPoolSize * 2, "task");
+        downloadExecutor = new BlockingThreadPoolExecutor(maximumPoolSize * 2, "download-server-executor");
     }
 
     @PreDestroy

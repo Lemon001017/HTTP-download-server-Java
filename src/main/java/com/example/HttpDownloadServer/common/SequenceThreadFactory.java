@@ -1,10 +1,14 @@
 package com.example.HttpDownloadServer.common;
 
+import lombok.Getter;
+import lombok.NonNull;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SequenceThreadFactory implements ThreadFactory {
     private final AtomicLong index = new AtomicLong(0);
+    @Getter
     private final String name;
 
     public SequenceThreadFactory(String name) {
@@ -12,14 +16,10 @@ public class SequenceThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(Runnable r) {
+    public Thread newThread(@NonNull Runnable r) {
         Thread thread = new Thread(r);
         thread.setName(String.format("%s-%d", name, index.getAndIncrement()));
         return thread;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public long getIndex() {
