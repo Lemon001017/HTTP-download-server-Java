@@ -4,8 +4,8 @@ import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.exception.StorageException;
 import com.example.HttpDownloadServer.param.FileParam;
-import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.param.Result;
+import com.example.HttpDownloadServer.service.FileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,9 +30,9 @@ public class FileServiceImpl implements FileService {
     public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParam params) {
         Result<List<com.example.HttpDownloadServer.entity.File>> result = new Result<>();
         params.disposalFileParams();
-        try (Stream<Path> pathStream= Files.walk(rootLocation, 1)){
+        try (Stream<Path> pathStream = Files.walk(rootLocation, 1)) {
             // Get all folders and files with depth one in the download path
-            List<com.example.HttpDownloadServer.entity.File> fileList= filterFilesByType(pathStream, params);
+            List<com.example.HttpDownloadServer.entity.File> fileList = filterFilesByType(pathStream, params);
             result.setCode(Constants.HTTP_STATUS_OK);
             result.setData(fileList);
         } catch (IOException e) {
@@ -43,7 +45,7 @@ public class FileServiceImpl implements FileService {
     /**
      * Stream processing, parsing, filtering, extraction, sorting, sorting
      **/
-    private ArrayList<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParam params) {
+    private List<com.example.HttpDownloadServer.entity.File> filterFilesByType(Stream<Path> pathStream, FileParam params) {
         return pathStream
                 .filter(path -> !path.equals(rootLocation))
                 .filter(path -> !Files.isDirectory(path))
