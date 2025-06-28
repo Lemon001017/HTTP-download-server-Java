@@ -19,30 +19,17 @@ public class SettingsServiceImpl implements SettingsService {
     @Override
     public Result<Settings> updateSettings(Settings settings) {
         Result<Settings> result = new Result<>();
-        if (settings == null) {
-            result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
-            result.setMessage(Constants.ERR_SAVE_SETTINGS);
-            log.error("Save settings error");
-            return result;
-        }
-        settings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_ROOT_PATH);
-        if (settings.getMaxDownloadSpeed() <= 0) {
-            settings.setMaxDownloadSpeed(Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
-        }
-        if (settings.getMaxTasks() <= 0) {
-            settings.setMaxTasks(Constants.DEFAULT_MAX_TASKS);
-        }
-
-        Settings settings1 = settingsMapper.selectById(1);
-        if (settings1 == null) {
-            settings.setId(1);
-            settingsMapper.insert(settings);
-        } else {
+        try {
             settingsMapper.updateById(settings);
+            result.setData(settings);
+            result.setCode(Constants.HTTP_STATUS_OK);
+            result.setMessage("Settings updated successfully");
+            log.info("Update settings success");
+        } catch (Exception e) {
+            log.error("Failed to update settings", e);
+            result.setCode(Constants.HTTP_STATUS_SERVER_ERROR);
+            result.setMessage(Constants.ERR_SAVE_SETTINGS);
         }
-        result.setData(settings);
-        result.setCode(Constants.HTTP_STATUS_OK);
-        log.info("Update settings success");
         return result;
     }
 

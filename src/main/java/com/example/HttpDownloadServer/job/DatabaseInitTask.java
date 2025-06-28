@@ -1,11 +1,14 @@
-package com.example.HttpDownloadServer.service;
+package com.example.HttpDownloadServer.job;
 
+import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.dao.SettingsMapper;
+import com.example.HttpDownloadServer.entity.Settings;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 import javax.sql.DataSource;
@@ -23,26 +26,39 @@ import java.util.List;
  * Automatically creates required tables on application startup
  */
 @Slf4j
-@Service
-public class DatabaseInitService implements CommandLineRunner {
+@Component
+public class DatabaseInitTask implements CommandLineRunner {
 
     @Autowired
     private DataSource dataSource;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    
+    @Autowired
+    private SettingsMapper settingsMapper;
 
     private static final String SETTINGS_TABLE = "settings";
     private static final String TASK_TABLE = "task";
 
     @Override
     public void run(String... args) throws Exception {
+        log.info("Starting database initialization...");
+        
         try {
             List<String> missingTables = missingTables();
+            
             if (!missingTables.isEmpty()) {
+                log.info("Missing tables detected: {}", missingTables);
                 createMissingTables(missingTables);
                 log.info("Database initialization completed successfully");
+            } else {
+                log.info("All required tables already exist");
             }
+            
+            // Initialize default settings if settings table is empty
+            initializeDefaultSettings();
+            
         } catch (Exception e) {
             log.error("Database initialization failed", e);
             throw e;
@@ -100,6 +116,40 @@ public class DatabaseInitService implements CommandLineRunner {
                 log.error("SQL script not found for table: {}", tableName);
                 throw new RuntimeException("SQL script not found for table: " + tableName);
             }
+        }
+    }
+
+    /**
+     * Initialize default settings if settings table is empty
+     */
+    private void initializeDefaultSettings() {
+        try {
+            // Check if settings table has any data using MyBatis-Plus
+            List<Settings> existingSettings = settingsMapper.selectList(null);
+            
+            if (existingSettings == null || existingSettings.isEmpty()) {
+                log.info("Settings table is empty, inserting default settings");
+                
+                // Create default settings
+                Settings defaultSettings = new Settings();
+                defaultSettings.setId(1);
+                defaultSettings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_ROOT_PATH);
+                defaultSettings.setMaxDownloadSpeed(Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+                defaultSettings.setMaxTasks(Constants.DEFAULT_MAX_TASKS);
+                
+                // Insert default settings using MyBatis-Plus
+                settingsMapper.insert(defaultSettings);
+                
+                log.info("Default settings inserted successfully: download_path={}, max_download_speed={}, max_tasks={}", 
+                    defaultSettings.getDownloadPath(), 
+                    defaultSettings.getMaxDownloadSpeed(), 
+                    defaultSettings.getMaxTasks());
+            } else {
+                log.info("Settings table already has data, skipping default initialization");
+            }
+        } catch (Exception e) {
+            log.error("Failed to initialize default settings", e);
+            throw new RuntimeException("Failed to initialize default settings", e);
         }
     }
 
