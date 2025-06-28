@@ -8,15 +8,15 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 public interface TaskService {
-    public Result<String> submit(String url) throws IOException, URISyntaxException;
+    Result<String> submit(String url) throws IOException, URISyntaxException;
 
-    public Result<List<String>> pause(List<String> ids);
+    Result<List<String>> pause(List<String> ids);
 
-    public Result<List<String>> resume(List<String> ids);
+    Result<List<String>> resume(List<String> ids);
 
-    public Result<List<String>> restart(List<String> ids);
+    Result<List<String>> restart(List<String> ids);
 
-    public Result<List<String>> delete(List<String> ids);
+    Result<List<String>> delete(List<String> ids);
 
-    public Result<List<Task>> getTaskList(String status);
+    Result<List<Task>> getTaskList(String status);
 }

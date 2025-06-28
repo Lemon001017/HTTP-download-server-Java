@@ -72,7 +72,7 @@ public class TaskServiceImpl implements TaskService {
             if (!downloadExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 downloadExecutor.shutdownNow();
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ignore) {
         }
     }
 
@@ -138,7 +138,7 @@ public class TaskServiceImpl implements TaskService {
             while ((bytesRead = in.read(buffer)) != -1) {
                 // Check whether the current thread is interrupted
                 if (Thread.currentThread().isInterrupted()) {
-                    log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().getId());
+                    log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().threadId());
                     in.close();
                     raf.close();
                     conn.disconnect();
@@ -378,7 +378,7 @@ public class TaskServiceImpl implements TaskService {
         List<String> contentDisposition = headers.get("Content-Disposition");
 
         if (contentDisposition != null && !contentDisposition.isEmpty()) {
-            String disposition = contentDisposition.get(0);
+            String disposition = contentDisposition.getFirst();
             int index = disposition.indexOf("filename=");
             if (index > 0) {
                 fileName = disposition.substring(index + 10, disposition.length() - 1);
