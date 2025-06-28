@@ -12,8 +12,7 @@ import com.example.HttpDownloadServer.param.Result;
 import com.google.common.util.concurrent.RateLimiter;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 @SuppressWarnings("UnstableApiUsage")
 public class TaskServiceImpl implements TaskService {
     @Autowired
@@ -50,8 +50,6 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private SseService sseService;
-
-    private static final Logger log = LoggerFactory.getLogger(TaskServiceImpl.class);
 
     private static final Object lock = new Object();
 

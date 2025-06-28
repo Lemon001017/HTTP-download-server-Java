@@ -1,10 +1,8 @@
 package com.example.HttpDownloadServer.controller;
 
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.param.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.example.HttpDownloadServer.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,14 +17,11 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
-    private static final Logger log = LoggerFactory.getLogger(TaskController.class);
-
     /**
      * Submit a task for download
      */
     @PostMapping("/submit")
     public Result<String> submit(@RequestParam String url) throws IOException, URISyntaxException {
-        log.info("Submit task:{}", url);
         return taskService.submit(url);
     }
 
@@ -35,7 +30,6 @@ public class TaskController {
      */
     @PostMapping("/pause")
     public Result<List<String>> pause(@RequestBody List<String> ids) {
-        log.info("Pause tasks:{}", ids);
         return taskService.pause(ids);
     }
 
@@ -44,7 +38,6 @@ public class TaskController {
      */
     @PostMapping("/resume")
     public Result<List<String>> resume(@RequestBody List<String> ids) {
-        log.info("Resume tasks:{}", ids);
         return taskService.resume(ids);
     }
 
@@ -53,7 +46,6 @@ public class TaskController {
      */
     @PostMapping("/restart")
     public Result<List<String>> restart(@RequestBody List<String> ids) {
-        log.info("Restart tasks:{}", ids);
         return taskService.restart(ids);
     }
 
@@ -62,7 +54,6 @@ public class TaskController {
      */
     @PostMapping("/delete")
     public Result<List<String>> delete(@RequestBody List<String> ids) {
-        log.info("Delete tasks:{}", ids);
         return taskService.delete(ids);
     }
 
@@ -71,7 +62,6 @@ public class TaskController {
      */
     @PostMapping("/list")
     public Result<List<Task>> getTaskList(@RequestParam String status) {
-        log.info("Get task list with status:{}", status);
         return taskService.getTaskList(status);
     }
 }

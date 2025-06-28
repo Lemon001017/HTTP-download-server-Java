@@ -4,8 +4,7 @@ import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.param.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -15,9 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class SseServiceImpl implements SseService {
-
-    private static final Logger log = LoggerFactory.getLogger(SseServiceImpl.class);
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 

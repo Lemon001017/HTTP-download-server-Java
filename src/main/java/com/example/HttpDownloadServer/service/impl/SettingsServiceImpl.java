@@ -5,16 +5,15 @@ import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.service.SettingsService;
 import com.example.HttpDownloadServer.param.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class SettingsServiceImpl implements SettingsService {
     @Autowired
     private SettingsMapper settingsMapper;
-    private static final Logger log = LoggerFactory.getLogger(SettingsServiceImpl.class);
 
     @Override
     public Result<Settings> updateSettings(Settings settings) {

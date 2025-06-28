@@ -6,8 +6,7 @@ import com.example.HttpDownloadServer.exception.StorageException;
 import com.example.HttpDownloadServer.param.FileParam;
 import com.example.HttpDownloadServer.param.Result;
 import com.example.HttpDownloadServer.service.FileService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -22,9 +21,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 public class FileServiceImpl implements FileService {
     private static Path rootLocation;
-    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Override
     public Result<List<com.example.HttpDownloadServer.entity.File>> fetchFileList(FileParam params) {

@@ -9,8 +9,7 @@ import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.exception.DownloadException;
 import com.example.HttpDownloadServer.service.RedisService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -23,14 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class RedisServiceImpl implements RedisService {
     private final RedisTemplate<String, String> redisTemplate;
     private final TaskMapper taskMapper;
     private final SettingsMapper settingsMapper;
     private final Random random = new Random();
     private final Object lock = new Object();
-    private static final Logger log = LoggerFactory.getLogger(RedisServiceImpl.class);
-
 
     @Autowired
     public RedisServiceImpl(TaskMapper taskMapper, SettingsMapper settingsMapper, RedisTemplate<String, String> redisTemplate) {
