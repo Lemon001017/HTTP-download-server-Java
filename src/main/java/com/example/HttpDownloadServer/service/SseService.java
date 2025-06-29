@@ -1,11 +1,10 @@
 package com.example.HttpDownloadServer.service;
 
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.param.Result;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
 
 public interface SseService {
-    Result<SseEmitter> subscribe(String id);
+    Flux<Task> subscribe(String id);
 
     void send(String id, Task task);
 
