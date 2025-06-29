@@ -3,6 +3,7 @@ package com.example.HttpDownloadServer.job;
 import com.example.HttpDownloadServer.constant.Constants;
 import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.entity.Settings;
+import com.example.HttpDownloadServer.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -37,6 +38,9 @@ public class DatabaseInitTask implements CommandLineRunner {
     
     @Autowired
     private SettingsMapper settingsMapper;
+
+    @Autowired
+    private FileService fileService;
 
     private static final String SETTINGS_TABLE = "settings";
     private static final String TASK_TABLE = "task";
@@ -127,26 +131,33 @@ public class DatabaseInitTask implements CommandLineRunner {
             // Check if settings table has any data using MyBatis-Plus
             List<Settings> existingSettings = settingsMapper.selectList(null);
             
+            Settings settings;
             if (existingSettings == null || existingSettings.isEmpty()) {
                 log.info("Settings table is empty, inserting default settings");
                 
                 // Create default settings
-                Settings defaultSettings = new Settings();
-                defaultSettings.setId(1);
-                defaultSettings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_ROOT_PATH);
-                defaultSettings.setMaxDownloadSpeed(Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
-                defaultSettings.setMaxTasks(Constants.DEFAULT_MAX_TASKS);
+                settings = new Settings();
+                settings.setId(1);
+                settings.setDownloadPath(Constants.DEFAULT_DOWNLOAD_ROOT_PATH);
+                settings.setMaxDownloadSpeed(Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+                settings.setMaxTasks(Constants.DEFAULT_MAX_TASKS);
                 
                 // Insert default settings using MyBatis-Plus
-                settingsMapper.insert(defaultSettings);
+                settingsMapper.insert(settings);
                 
                 log.info("Default settings inserted successfully: download_path={}, max_download_speed={}, max_tasks={}", 
-                    defaultSettings.getDownloadPath(), 
-                    defaultSettings.getMaxDownloadSpeed(), 
-                    defaultSettings.getMaxTasks());
+                    settings.getDownloadPath(), 
+                    settings.getMaxDownloadSpeed(), 
+                    settings.getMaxTasks());
             } else {
-                log.info("Settings table already has data, skipping default initialization");
+                log.info("Settings table already has data, using existing settings");
+                settings = existingSettings.get(0);
             }
+            
+            // Initialize FileService with settings
+            fileService.init(settings);
+            log.info("FileService initialized successfully with download path: {}", settings.getDownloadPath());
+            
         } catch (Exception e) {
             log.error("Failed to initialize default settings", e);
             throw new RuntimeException("Failed to initialize default settings", e);

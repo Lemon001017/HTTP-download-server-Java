@@ -95,7 +95,7 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public boolean addTaskQueue(Task task) {
-        Settings settings = settingsMapper.selectById(1);
+        Settings settings = settingsMapper.selectOne(null);
         int retryCount = 0;
         while (retryCount++ < Constants.DEFAULT_MAX_ATTEMPTS) {
             ListOperations<String, String> listOperations = redisTemplate.opsForList();
