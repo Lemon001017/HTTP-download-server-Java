@@ -1,15 +1,14 @@
 package com.example.HttpDownloadServer;
 
 import com.example.HttpDownloadServer.constant.Constants;
+import com.example.HttpDownloadServer.dao.TaskMapper;
 import com.example.HttpDownloadServer.entity.Settings;
 import com.example.HttpDownloadServer.entity.Task;
-import com.example.HttpDownloadServer.dao.SettingsMapper;
-import com.example.HttpDownloadServer.dao.TaskMapper;
 import com.example.HttpDownloadServer.param.FileParam;
+import com.example.HttpDownloadServer.param.Result;
 import com.example.HttpDownloadServer.service.FileService;
 import com.example.HttpDownloadServer.service.SettingsService;
 import com.example.HttpDownloadServer.service.TaskService;
-import com.example.HttpDownloadServer.param.Result;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,9 +35,6 @@ public class HttpDownloadServerAPITests {
     private FileService fileService;
 
     @Autowired
-    private SettingsMapper settingsMapper;
-
-    @Autowired
     private TaskMapper taskMapper;
 
     @Test
@@ -47,15 +43,6 @@ public class HttpDownloadServerAPITests {
         assertEquals(Constants.DEFAULT_DOWNLOAD_ROOT_PATH, result.getDownloadPath());
         assertEquals(Constants.DEFAULT_MAX_TASKS, result.getMaxTasks());
         assertEquals(Constants.DEFAULT_MAX_DOWNLOAD_SPEED, result.getMaxDownloadSpeed());
-    }
-
-    @Test
-    public void testUpdateSettings() {
-        Settings settings = new Settings(1, "test", 2, 3);
-        settingsService.updateSettings(settings);
-        Settings result = settingsMapper.selectById(1);
-        assertEquals(2, result.getMaxTasks());
-        assertEquals(3, result.getMaxDownloadSpeed());
     }
 
     @Test

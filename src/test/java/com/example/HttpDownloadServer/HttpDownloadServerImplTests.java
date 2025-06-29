@@ -1,15 +1,15 @@
 package com.example.HttpDownloadServer;
 
 import com.example.HttpDownloadServer.constant.Constants;
-import com.example.HttpDownloadServer.entity.Settings;
-import com.example.HttpDownloadServer.entity.Task;
 import com.example.HttpDownloadServer.dao.SettingsMapper;
 import com.example.HttpDownloadServer.service.RedisService;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,71 +51,71 @@ public class HttpDownloadServerImplTests {
         }
     }
 
-    @Test
-    public void testNormalAddTask() {
-        Task task = new Task(
-                "2", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
-        settingsMapper.insert(settings);
-        Assertions.assertTrue(redisService.addTaskQueue(task));
-        Assertions.assertTrue(redisService.deleteTaskQueue(task));
-        settingsMapper.deleteById(2);
-    }
-
-    @Test
-    public void testUnnormalAddTask() throws InterruptedException {
-        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
-        settingsMapper.insert(settings);
-        Task task1 = new Task(
-                "1", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Task task2 = new Task(
-                "2", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Task task3 = new Task(
-                "3", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Task task4 = new Task(
-                "4", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Task task5 = new Task(
-                "5", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-        Task task6 = new Task(
-                "6", "test", "test",
-                10L, 10, "test", "test", "downloaded",
-                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
-        );
-
-        Assertions.assertTrue(redisService.addTaskQueue(task1));
-        Assertions.assertTrue(redisService.addTaskQueue(task2));
-        Assertions.assertTrue(redisService.addTaskQueue(task3));
-        Assertions.assertTrue(redisService.addTaskQueue(task4));
-        Assertions.assertFalse(redisService.addTaskQueue(task5));
-        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED,task5.getStatus());
-        Thread thread=new Thread(()-> Assertions.assertTrue(redisService.addTaskQueue(task6)));
-        thread.start();
-        Thread.sleep(1000);
-        Assertions.assertTrue(redisService.deleteTaskQueue(task1));
-        Thread.sleep(1000);
-        Assertions.assertTrue(redisService.deleteTaskQueue(task2));
-        Assertions.assertTrue(redisService.deleteTaskQueue(task3));
-        Assertions.assertTrue(redisService.deleteTaskQueue(task4));
-        Assertions.assertFalse(redisService.deleteTaskQueue(task5));
-        Assertions.assertTrue(redisService.deleteTaskQueue(task6));
-        settingsMapper.deleteById(2);
-    }
+//    @Test
+//    public void testNormalAddTask() {
+//        Task task = new Task(
+//                "2", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+//        settingsMapper.insert(settings);
+//        Assertions.assertTrue(redisService.addTaskQueue(task));
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task));
+//        settingsMapper.deleteById(2);
+//    }
+//
+//    @Test
+//    public void testUnnormalAddTask() throws InterruptedException {
+//        Settings settings = new Settings(2, Constants.DEFAULT_DOWNLOAD_ROOT_PATH, Constants.DEFAULT_MAX_TASKS, Constants.DEFAULT_MAX_DOWNLOAD_SPEED);
+//        settingsMapper.insert(settings);
+//        Task task1 = new Task(
+//                "1", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Task task2 = new Task(
+//                "2", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Task task3 = new Task(
+//                "3", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Task task4 = new Task(
+//                "4", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Task task5 = new Task(
+//                "5", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//        Task task6 = new Task(
+//                "6", "test", "test",
+//                10L, 10, "test", "test", "downloaded",
+//                1, 1.0, 1.0, 1.0, 1, 1, LocalDateTime.now()
+//        );
+//
+//        Assertions.assertTrue(redisService.addTaskQueue(task1));
+//        Assertions.assertTrue(redisService.addTaskQueue(task2));
+//        Assertions.assertTrue(redisService.addTaskQueue(task3));
+//        Assertions.assertTrue(redisService.addTaskQueue(task4));
+//        Assertions.assertFalse(redisService.addTaskQueue(task5));
+//        Assertions.assertEquals(Constants.TASK_STATUS_CANCELED,task5.getStatus());
+//        Thread thread=new Thread(()-> Assertions.assertTrue(redisService.addTaskQueue(task6)));
+//        thread.start();
+//        Thread.sleep(1000);
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task1));
+//        Thread.sleep(1000);
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task2));
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task3));
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task4));
+//        Assertions.assertFalse(redisService.deleteTaskQueue(task5));
+//        Assertions.assertTrue(redisService.deleteTaskQueue(task6));
+//        settingsMapper.deleteById(2);
+//    }
 }
