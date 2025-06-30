@@ -10,6 +10,7 @@ import com.example.HttpDownloadServer.service.SseService;
 import com.example.HttpDownloadServer.service.TaskService;
 import com.example.HttpDownloadServer.param.Result;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @Slf4j
@@ -54,6 +58,16 @@ public class TaskServiceImpl implements TaskService {
     private static final Object lock = new Object();
 
     private final Map<String, List<Future<?>>> chunkFutures = new ConcurrentHashMap<>();
+    
+    // Task progress tracking with atomic operations
+    private final Map<String, AtomicLong> taskProgressMap = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> taskStartTimeMap = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> taskLastUpdateTimeMap = new ConcurrentHashMap<>();
+    
+    // Scheduled executor for progress updates
+    private final ScheduledExecutorService progressExecutor = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setNameFormat("progress-updater-%d").build()
+    );
 
     private ExecutorService downloadExecutor;
 
@@ -66,9 +80,13 @@ public class TaskServiceImpl implements TaskService {
     @PreDestroy
     public void destroy() {
         downloadExecutor.shutdown();
+        progressExecutor.shutdown();
         try {
             if (!downloadExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 downloadExecutor.shutdownNow();
+            }
+            if (!progressExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                progressExecutor.shutdownNow();
             }
         } catch (InterruptedException ignore) {
         }
@@ -97,8 +115,12 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private void processDownload(Task task) throws IOException, URISyntaxException {
-        long startTime = System.currentTimeMillis();
         task.setStatus(Constants.TASK_STATUS_DOWNLOADING);
+        taskMapper.updateById(task);
+        
+        // Start progress tracking
+        startProgressTracking(task);
+        
         File outputFile = new File(task.getSavePath());
         List<Future<?>> futures = new ArrayList<>();
         List<Integer> scoreboard = redisService.getScoreboard(task.getId());
@@ -110,87 +132,50 @@ public class TaskServiceImpl implements TaskService {
             int end = (int) Math.min(task.getSize(), start + task.getChunkSize()) - 1;
             int chunkIndex = i;
             if (scoreboard.contains(chunkIndex)) {
-                Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, startTime, chunkIndex, limiter));
+                Future<?> future = downloadExecutor.submit(() -> downloadChunk(task, start, end, outputFile, chunkIndex, limiter));
                 futures.add(future);
             }
         }
         chunkFutures.put(task.getId(), futures);
     }
 
-    private void downloadChunk(Task task, int start, int end, File file, long startTime, int index, RateLimiter limiter) {
+    private void downloadChunk(Task task, int start, int end, File file, int index, RateLimiter limiter) {
         try {
             HttpURLConnection conn = getConn(task.getUrl());
             conn.setRequestProperty("Range", "bytes=" + start + "-" + end);
             BufferedInputStream in = new BufferedInputStream(conn.getInputStream());
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
 
-            synchronized (lock) {
-                raf.seek(start);
-            }
+            // Seek to start position
+            raf.seek(start);
 
             byte[] buffer = new byte[4096];
             int bytesRead;
-
-            long lastMessageTime = System.currentTimeMillis();
 
             while ((bytesRead = in.read(buffer)) != -1) {
                 // Check whether the current thread is interrupted
                 if (Thread.currentThread().isInterrupted()) {
                     log.info("Download paused for task id:{} threadId:{}", task.getId(), Thread.currentThread().threadId());
-                    in.close();
-                    raf.close();
-                    conn.disconnect();
-                    return;
+                    break;
                 }
+                
                 limiter.acquire(bytesRead);
                 raf.write(buffer, 0, bytesRead);
-                synchronized (lock) {
-                    task.setTotalDownloaded(task.getTotalDownloaded() + bytesRead);
-                    if (System.currentTimeMillis() - lastMessageTime >= Constants.MessageInterval) {
-                        // Calculate download data
-                        long elapsedTime = System.currentTimeMillis() - startTime;
-                        double speed = Math.round((task.getTotalDownloaded() / (elapsedTime / 1000.0) / 1024 / 1024) * 100.0) / 100.0;
-                        double progress = Math.round((task.getTotalDownloaded() * 1.0 * 100 / task.getSize()) * 100.0) / 100.0;
-                        double remainingTime = Math.round((((task.getSize() - task.getTotalDownloaded()) / 1024.0 / 1024.0) / speed) * 100.0) / 100.0;
-
-                        task.setSpeed(speed);
-                        task.setProgress(progress);
-                        task.setRemainingTime(remainingTime);
-
-                        sseService.send(task.getId(), task);
-                        taskMapper.updateById(task);
-                        lastMessageTime = System.currentTimeMillis();
-                    }
-                }
+                
+                // Update progress atomically
+                updateTaskProgress(task.getId(), bytesRead);
             }
 
-            synchronized (lock) {
-                redisService.updateScoreboard(task.getId(), index);
-            }
-
-            if (task.getTotalDownloaded() == task.getSize() || redisService.getScoreboard(task.getId()).isEmpty()) {
-                log.info("Download complete id:{} url:{}", task.getId(), task.getUrl());
-                handleTaskFinish(task);
-            }
+            // Mark chunk as completed
+            markChunkCompleted(task.getId(), index);
 
             in.close();
             raf.close();
             conn.disconnect();
         } catch (IOException e) {
             log.error("Download failed id:{} err:{}", task.getId(), e.getMessage());
-            task.setStatus(Constants.TASK_STATUS_FAILED);
-            taskMapper.updateById(task);
+            handleTaskFailure(task);
         }
-    }
-
-    private void handleTaskFinish(Task task) {
-        redisService.deleteScoreboard(task.getId());
-        task.setProgress(100);
-        task.setRemainingTime(0);
-        task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
-        taskMapper.updateById(task);
-        sseService.send(task.getId(), task);
-        sseService.close(task.getId());
     }
 
     @Override
@@ -211,6 +196,7 @@ public class TaskServiceImpl implements TaskService {
                     log.error("The task futures is null id:{}", task.getId());
                 }
                 sseService.close(task.getId());
+                cleanupTaskResources(task.getId());
             } else {
                 log.error("The task status is not downloading id:{} status:{}", task.getId(), task.getStatus());
                 result.setCode(Constants.HTTP_STATUS_BAD_REQUEST);
@@ -296,6 +282,7 @@ public class TaskServiceImpl implements TaskService {
         taskMapper.deleteByIds(ids);
         for (String id : ids) {
             redisService.deleteScoreboard(id);
+            cleanupTaskResources(id);
         }
         result.setData(ids);
         result.setCode(Constants.HTTP_STATUS_OK);
@@ -377,16 +364,151 @@ public class TaskServiceImpl implements TaskService {
 
         if (contentDisposition != null && !contentDisposition.isEmpty()) {
             String disposition = contentDisposition.getFirst();
-            int index = disposition.indexOf("filename=");
-            if (index > 0) {
-                fileName = disposition.substring(index + 10, disposition.length() - 1);
+            if (disposition.contains("filename=")) {
+                fileName = disposition.substring(disposition.indexOf("filename=") + 9);
+                if (fileName.startsWith("\"") && fileName.endsWith("\"")) {
+                    fileName = fileName.substring(1, fileName.length() - 1);
+                }
             }
         }
 
-        if (fileName == null) {
-            fileName = urlString.substring(urlString.lastIndexOf("/") + 1);
+        if (fileName == null || fileName.isEmpty()) {
+            try {
+                URI uri = new URI(urlString);
+                String path = uri.getPath();
+                fileName = path.substring(path.lastIndexOf("/") + 1);
+            } catch (URISyntaxException e) {
+                fileName = "unknown";
+            }
         }
 
         return fileName;
+    }
+
+    // Progress tracking methods
+    private void startProgressTracking(Task task) {
+        String taskId = task.getId();
+        long startTime = System.currentTimeMillis();
+        
+        taskStartTimeMap.put(taskId, new AtomicLong(startTime));
+        taskLastUpdateTimeMap.put(taskId, new AtomicLong(startTime));
+        
+        // Schedule periodic progress updates
+        progressExecutor.scheduleAtFixedRate(() -> {
+            try {
+                updateTaskProgressAndNotify(taskId);
+            } catch (Exception e) {
+                log.error("Error updating progress for task: {}", taskId, e);
+            }
+        }, Constants.MessageInterval, Constants.MessageInterval, TimeUnit.MILLISECONDS);
+    }
+
+    private void updateTaskProgress(String taskId, int bytesRead) {
+        AtomicLong progress = taskProgressMap.computeIfAbsent(taskId, k -> new AtomicLong(0));
+        progress.addAndGet(bytesRead);
+    }
+
+    private void markChunkCompleted(String taskId, int chunkIndex) {
+        synchronized (lock) {
+            redisService.updateScoreboard(taskId, chunkIndex);
+
+            // Check if all chunks are completed
+            if (redisService.getScoreboard(taskId).isEmpty()) {
+                log.info("Download complete id:{}", taskId);
+                handleTaskFinish(taskId);
+            }
+        }
+    }
+
+    private void handleTaskFailure(Task task) {
+        task.setStatus(Constants.TASK_STATUS_FAILED);
+        taskMapper.updateById(task);
+        cleanupTaskResources(task.getId());
+    }
+
+    private void handleTaskFinish(String taskId) {
+        Task task = taskMapper.selectById(taskId);
+        if (task != null) {
+            redisService.deleteScoreboard(taskId);
+            task.setProgress(100);
+            task.setRemainingTime(0);
+            task.setStatus(Constants.TASK_STATUS_DOWNLOADED);
+            taskMapper.updateById(task);
+            sseService.send(taskId, task);
+            sseService.close(taskId);
+            cleanupTaskResources(taskId);
+        }
+    }
+
+    private void cleanupTaskResources(String taskId) {
+        taskProgressMap.remove(taskId);
+        taskStartTimeMap.remove(taskId);
+        taskLastUpdateTimeMap.remove(taskId);
+        chunkFutures.remove(taskId);
+    }
+
+    private void updateTaskProgressAndNotify(String taskId) {
+        AtomicLong progress = taskProgressMap.get(taskId);
+        AtomicLong startTime = taskStartTimeMap.get(taskId);
+        AtomicLong lastUpdateTime = taskLastUpdateTimeMap.get(taskId);
+        
+        if (progress == null || startTime == null || lastUpdateTime == null) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long lastUpdate = lastUpdateTime.get();
+        
+        // Only update if enough time has passed
+        if (currentTime - lastUpdate < Constants.MessageInterval) {
+            return;
+        }
+
+        Task task = taskMapper.selectById(taskId);
+        if (task == null || !task.getStatus().equals(Constants.TASK_STATUS_DOWNLOADING)) {
+            return;
+        }
+
+        long totalDownloaded = progress.get();
+        long elapsedTime = currentTime - startTime.get();
+        
+        // Calculate metrics
+        double speed = calculateSpeed(totalDownloaded, elapsedTime);
+        double progressPercent = calculateProgress(totalDownloaded, task.getSize());
+        double remainingTime = calculateRemainingTime(totalDownloaded, task.getSize(), speed);
+
+        // Update task with new metrics
+        task.setTotalDownloaded(totalDownloaded);
+        task.setSpeed(speed);
+        task.setProgress(progressPercent);
+        task.setRemainingTime(remainingTime);
+
+        // Send SSE update
+        sseService.send(taskId, task);
+        
+        // Update database (less frequently to reduce DB load)
+        if (currentTime - lastUpdate >= Constants.MessageInterval * 2) {
+            taskMapper.updateById(task);
+            lastUpdateTime.set(currentTime);
+        }
+    }
+
+    private double calculateSpeed(long bytesDownloaded, long elapsedTimeMs) {
+        if (elapsedTimeMs <= 0) return 0.0;
+        double speedMBps = (bytesDownloaded / (elapsedTimeMs / 1000.0)) / (1024 * 1024);
+        return Math.round(speedMBps * 100.0) / 100.0;
+    }
+
+    private double calculateProgress(long bytesDownloaded, long totalSize) {
+        if (totalSize <= 0) return 0.0;
+        double progress = (bytesDownloaded * 100.0) / totalSize;
+        return Math.round(progress * 100.0) / 100.0;
+    }
+
+    private double calculateRemainingTime(long bytesDownloaded, long totalSize, double speedMBps) {
+        if (speedMBps <= 0) return 0.0;
+        long remainingBytes = totalSize - bytesDownloaded;
+        double remainingTimeSeconds = (remainingBytes / (1024.0 * 1024.0)) / speedMBps;
+        return Math.round(remainingTimeSeconds * 100.0) / 100.0;
     }
 }
